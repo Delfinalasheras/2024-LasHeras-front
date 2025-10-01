@@ -17,14 +17,13 @@ const firebaseConfig = {
 };
 */
 const firebaseConfig = {
-  apiKey: "AIzaSyABXtMyR7Fi-xshZaVaelZMwkAldt4WB0M",
-  authDomain: "healthybite-b2a20.firebaseapp.com",
-  databaseURL: "https://healthybite-b2a20-default-rtdb.firebaseio.com",
-  projectId: "healthybite-b2a20",
-  storageBucket: "healthybite-b2a20.appspot.com",
-  messagingSenderId: "1061070227538",
-  appId: "1:1061070227538:web:7c622ae4edd5d0e68ff78b",
-  measurementId: "G-K873CFX9CS"
+  apiKey: "AIzaSyAj7bvrsWHqcMVTX8gWoUgRdBURUACd4dA",
+  authDomain: "finalhealthybite.firebaseapp.com",
+  projectId: "finalhealthybite",
+  storageBucket: "finalhealthybite.firebasestorage.app",
+  messagingSenderId: "160483540235",
+  appId: "1:160483540235:web:80f4846bb0d47b67e6b60e",
+  measurementId: "G-DNZ541DT4Y"
 };
 
 // Initialize Firebase
