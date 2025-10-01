@@ -1,0 +1,64 @@
+[33m8fc9f3a[m[33m ([m[1;36mHEAD -> [m[1;32mdev[m[33m, [m[1;31morigin/dev[m[33m)[m Merge branch 'SCRUM-91' into dev
+[33m4732f6c[m[33m ([m[1;31morigin/SCRUM-91[m[33m, [m[1;32mSCRUM-91[m[33m)[m SCRUM-91: https://healthybite.atlassian.net/browse/SCRUM-91
+[33mb760387[m Merge pull request #19 from uca-pid/SCRUM-92
+[33m1a4ed07[m[33m ([m[1;31morigin/SCRUM-92[m[33m)[m SCRUM-92 SCRUM-89 now you can add drinks and plates to categories and  in home you can filter by type of drink too https://healthybite.atlassian.net/browse/SCRUM-92,https://healthybite.atlassian.net/browse/SCRUM-89
+[33m5408c6d[m[33m ([m[1;31morigin/SCRUM-86[m[33m, [m[1;32mSCRUM-86[m[33m)[m SCRUM-86: https://healthybite.atlassian.net/browse/SCRUM-86
+[33m76b5a91[m[33m ([m[1;31morigin/SCRUM-90[m[33m)[m Fixing error in Drinks
+[33mc14a34d[m[33m ([m[1;31morigin/SCRUM-80[m[33m, [m[1;32mSCRUM-80[m[33m)[m SCRUM-80: https://healthybite.atlassian.net/browse/SCRUM-80
+[33ma5d4cfa[m[33m ([m[1;31morigin/SCRUM-87[m[33m, [m[1;32mSCRUM-87[m[33m)[m SCRUM-87 Checking update
+[33m6962eba[m SCRUM-87: https://healthybite.atlassian.net/browse/SCRUM-87
+[33m149f1d7[m Merge branch 'dev' of https://github.com/uca-pid/2024-ranchoaparte-front into SCRUM-87
+[33mce8f0e2[m Merge pull request #18 from uca-pid/SCRUM-90
+[33m3caa88e[m refactoring drinks frontend
+[33m7a891d0[m SCRUM-87: primera parte (esta incompleto)
+[33ma7d0fc2[m Merge branch 'SCRUM-82' into dev
+[33me6c2b77[m[33m ([m[1;31morigin/SCRUM-82[m[33m, [m[1;32mSCRUM-82[m[33m)[m SCRUM-82: https://healthybite.atlassian.net/browse/SCRUM-82
+[33m167bd69[m Merge pull request #17 from uca-pid/SCRUM-90
+[33m89db2f3[m Merge branch 'dev' into SCRUM-90
+[33mf33da97[m SCRUM-90 user can now consume foods,plates, drinks and products https://healthybite.atlassian.net/browse/SCRUM-90
+[33m29175a2[m Merge branch 'SCRUM-73' into dev
+[33m197c9b5[m[33m ([m[1;31morigin/SCRUM-73[m[33m, [m[1;32mSCRUM-73[m[33m)[m SCRUM-73: https://healthybite.atlassian.net/browse/SCRUM-73
+[33m63d8bd1[m Merge pull request #16 from uca-pid/SCRUM-76
+[33m98e01f3[m[33m ([m[1;31morigin/SCRUM-76[m[33m)[m SCRUM-76 & SCRUM-83 edit, delete plates and add the images https://healthybite.atlassian.net/browse/SCRUM-76 https://healthybite.atlassian.net/browse/SCRUM-83
+[33m076652d[m[33m ([m[1;31morigin/SCRUM-84[m[33m)[m Merge pull request #15 from uca-pid/SCRUM-84
+[33m233c7e3[m SCRUM-84 agregar,delete,update drinks https://healthybite.atlassian.net/browse/SCRUM-84
+[33m05a5660[m Merge pull request #14 from uca-pid/SCRUM-68
+[33m9bd859f[m[33m ([m[1;31morigin/SCRUM-68[m[33m)[m SCRUM 68 when they click multiple times the fuction execute only once https://healthybite.atlassian.net/browse/SCRUM-68
+[33m814db6b[m Merge pull request #13 from uca-pid/SCRUM-79
+[33mbe0fe3e[m[33m ([m[1;31morigin/SCRUM-81[m[33m, [m[1;32mSCRUM-81[m[33m)[m SCRUM-81: https://healthybite.atlassian.net/browse/SCRUM-81
+[33m3cb168a[m[33m ([m[1;31morigin/SCRUM-70[m[33m, [m[1;32mSCRUM-70[m[33m)[m SCRUM-70: https://healthybite.atlassian.net/browse/SCRUM-70
+[33mec5e066[m[33m ([m[1;31morigin/SCRUM-78[m[33m, [m[1;32mSCRUM-78[m[33m)[m SCRUM-78: https://healthybite.atlassian.net/browse/SCRUM-78
+[33m25881fc[m[33m ([m[1;31morigin/SCRUM-79[m[33m)[m SCRUM -79 https://healthybite.atlassian.net/browse/SCRUM-79
+[33ma731282[m[33m ([m[1;31morigin/SCRUM-69[m[33m, [m[1;32mSCRUM-69[m[33m)[m SCRUM-69: https://healthybite.atlassian.net/browse/SCRUM-69
+[33m1e34c48[m[33m ([m[1;31morigin/SCRUM-64[m[33m, [m[1;32mSCRUM-64[m[33m)[m SCRUM-64: https://healthybite.atlassian.net/browse/SCRUM-64
+[33mce7529c[m SCRUM-64: https://healthybite.atlassian.net/browse/SCRUM-64
+[33m65dac16[m[33m ([m[1;31morigin/SCRUM-71[m[33m, [m[1;32mSCRUM-71[m[33m)[m SCRUM-71: https://healthybite.atlassian.net/browse/SCRUM-71
+[33mac3617f[m[33m ([m[1;31morigin/SCRUM-67[m[33m, [m[1;32mSCRUM-67[m[33m)[m SCRUM-67: https://healthybite.atlassian.net/browse/SCRUM-67
+[33m992190a[m[33m ([m[1;31morigin/SCRUM-75[m[33m, [m[1;32mSCRUM-75[m[33m)[m SCRUM-75 y SCRUM-66 : https://healthybite.atlassian.net/browse/SCRUM-75
+[33m231d491[m[33m ([m[1;31morigin/SCRUM-62[m[33m, [m[1;32mSCRUM-62[m[33m)[m SCRUM-62: https://healthybite.atlassian.net/browse/SCRUM-62
+[33ma99a3c8[m[33m ([m[1;31morigin/SCRUM-63[m[33m, [m[1;32mSCRUM-63[m[33m)[m SCRUM-63: https://healthybite.atlassian.net/browse/SCRUM-63
+[33md67c0a0[m[33m ([m[1;31morigin/SCRUM-60[m[33m, [m[1;32mSCRUM-60[m[33m)[m SCRUM-60: https://healthybite.atlassian.net/browse/SCRUM-60
+[33mf4ad527[m Merge branch 'dev' of https://github.com/uca-pid/2024-ranchoaparte-front into dev
+[33m552f519[m fixing
+[33m566c643[m little bug fixed
+[33m52bd668[m fixing loader size
+[33m3dbbdd4[m adding loading
+[33mc4c22a5[m[33m ([m[1;31morigin/SCRUM-59[m[33m, [m[1;32mSCRUM-59[m[33m)[m SCRUM-59: https://healthybite.atlassian.net/browse/SCRUM-59
+[33mbe1c76c[m[33m ([m[1;31morigin/SCRUM-56[m[33m, [m[1;32mSCRUM-56[m[33m)[m SCRUM-56: fixing dashboard with C$V category
+[33m478c9e4[m Merge branch 'dev' of https://github.com/uca-pid/2024-ranchoaparte-front into SCRUM-56
+[33m647fccd[m SCRUM-56: https://healthybite.atlassian.net/browse/SCRUM-56
+[33mc70fb13[m Merge pull request #12 from uca-pid/SCRUM-56
+[33m58f2a75[m SCRUM-56 Add C&V bar as a category https://healthybite.atlassian.net/jira/software/projects/SCRUM/boards/1
+[33m036272e[m[33m ([m[1;31morigin/SCRUM-58[m[33m, [m[1;32mSCRUM-58[m[33m)[m SCRUM-58: https://healthybite.atlassian.net/browse/SCRUM-58
+[33m5ac452f[m fix problem with delete meal
+[33m1b5c2ff[m minor fixes
+[33m14b7dc9[m Merge pull request #11 from uca-pid/SCRUM-52
+[33me422b90[m[33m ([m[1;31morigin/SCRUM-52[m[33m)[m SCRUM-52.2 ADD FOODCONSUMED https://healthybite.atlassian.net/browse/SCRUM-54
+[33ma0b10ef[m Merge pull request #10 from uca-pid/SCRUM-53
+[33m475fef5[m[33m ([m[1;31morigin/SCRUM-53[m[33m)[m minor change;
+[33mc6e819b[m[33m ([m[1;32mSCRUM-52[m[33m)[m SCRUM-42: https://healthybite.atlassian.net/browse/SCRUM-52
+[33mbe1715b[m Merge pull request #9 from uca-pid/SCRUM-53
+[33m25a1b79[m  SCRUM 53 add validations to userEdit https://healthybite.atlassian.net/browse/SCRUM-53
+[33m8f4a282[m Merge pull request #8 from uca-pid/SCRUM-51
+[33mab187c8[m[33m ([m[1;31morigin/SCRUM-51[m[33m)[m fixing minor errors
+[33m3ba3463[m Merge pull request #7 from uca-pid/SCRUM-51

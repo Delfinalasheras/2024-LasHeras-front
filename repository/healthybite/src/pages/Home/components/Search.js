@@ -2,12 +2,21 @@ import React,{useEffect, useState} from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {  faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'; 
 
-const Search = ({foodData, setSearchFood}) => {
+const Search = ({foodData, setSearchFood, platesData, drinksData}) => {
     const [search, setSearch]=useState('')
 
     useEffect(()=>{
-        const foodFilter=foodData.filter(food=>(food.name.toLowerCase().includes(search.toLowerCase())))
-        setSearchFood(search!==''  ? foodFilter : foodData)
+        let filteredData;
+        if (foodData) {
+            filteredData = foodData.filter(food=>(food.name.toLowerCase().includes(search.toLowerCase())));
+        } else if (platesData) {
+            const minesFiltered = platesData.mines.filter(food=>(food.name.toLowerCase().includes(search.toLowerCase())));
+            const othersFiltered = platesData.others.filter(food=>(food.name.toLowerCase().includes(search.toLowerCase())));
+            filteredData = {mines: minesFiltered, others:othersFiltered};
+        } else if (drinksData) {
+            filteredData = drinksData.filter(food=>(food.name.toLowerCase().includes(search.toLowerCase())));
+        }
+        setSearchFood(search!==''  ? filteredData : foodData ? foodData : platesData ? platesData : drinksData && drinksData)
     },[search]);
 
     return (

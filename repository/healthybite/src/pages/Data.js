@@ -1,86 +1,66 @@
+
+import { 
+    faSquarePlus, faAppleAlt, faCarrot, faFish, faPizzaSlice, faIceCream, 
+    faBreadSlice, faEgg, faCheese, faDrumstickBite, faHotdog, faHamburger, 
+    faPepperHot, faCookie, faBacon, faLeaf, faSeedling, faLemon, 
+    faWineBottle, faMugHot
+} from '@fortawesome/free-solid-svg-icons';
+
 const Data={
-    users :[
-        {
-            "email": "jane.doe@example.com",
-            "password": "1234",
-            "surname": "Doe",
-            "weight": "65",  // peso en kilogramos
-            "birthDate": "1990-01-15",  // fecha de nacimiento en formato ISO (YYYY-MM-DD)
-            "height": "170",  // altura en centímetros
-            "name": "Jane"
-        },
+    iconOptions : [
+        { icon: faAppleAlt, name: 'Apple' },
+        { icon: faCarrot, name: 'Carrot' },
+        { icon: faFish, name: 'Fish' },
+        { icon: faPizzaSlice, name: 'Pizza' },
+        { icon: faIceCream, name: 'Ice Cream' },
+        { icon: faBreadSlice, name: 'Bread' },
+        { icon: faEgg, name: 'Egg' },
+        { icon: faCheese, name: 'Cheese' },
+        { icon: faDrumstickBite, name: 'Drumstick' },
+        { icon: faHotdog, name: 'Hotdog' },
+        { icon: faHamburger, name: 'Hamburger' },
+        { icon: faPepperHot, name: 'Pepper' },
+        { icon: faCookie, name: 'Cookie' },
+        { icon: faBacon, name: 'Bacon' },
+        { icon: faLeaf, name: 'Leaf' },
+        { icon: faSeedling, name: 'Seedling' },
+        { icon: faLemon, name: 'Lemon' },
+        { icon: faWineBottle, name: 'Wine Bottle' },
+        { icon: faMugHot, name: 'Mug' },
+        {icon: faDrumstickBite, name:"Seedling"}
     ],
-    food : [
+    goals:[
         {
-            name: "Chicken",
-            measure: "gr",
-            amount: 250,
-            calories: 488,
-            image: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Crispy_Chicken_Strips_-_FotoosVanRobin.jpg/640px-Crispy_Chicken_Strips_-_FotoosVanRobin.jpg",  // Reemplaza esta URL con una imagen real
+            id:1,
+            name:'calories'
         },
         {
-            name: "Apple",
-            measure: "unit",
-            amount: 1,
-            calories: 95,
-            image: "https://upload.wikimedia.org/wikipedia/commons/1/15/Red_Apple.jpg"
+            id:2,
+            name:'sodium'
         },
         {
-            name: "Banana",
-            measure: "unit",
-            amount: 1,
-            calories: 105,
-            image: "https://upload.wikimedia.org/wikipedia/commons/8/8a/Banana-Single.jpg"
+            id:3,
+            name:'fats'
         },
         {
-            name: "Rice",
-            measure: "gr",
-            amount: 200,
-            calories: 260,
-            image: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/White_rice_in_Bangladesh.jpg/640px-White_rice_in_Bangladesh.jpg"
+            id:4,
+            name:'carbohydrates'
         },
         {
-            name: "Broccoli",
-            measure: "gr",
-            amount: 100,
-            calories: 34,
-            image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Brocoli_03.jpg/640px-Brocoli_03.jpg"
+            id:5,
+            name:'protein'
         },
         {
-            name: "Salmon",
-            measure: "gr",
-            amount: 150,
-            calories: 280,
-            image: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/%D5%8D%D5%A1%D5%B2%D5%B4%D5%B8%D5%B6.JPG/640px-%D5%8D%D5%A1%D5%B2%D5%B4%D5%B8%D5%B6.JPG"
+            id:6,
+            name:'caffeine'
         },
         {
-            name: "Egg",
-            measure: "unit",
-            amount: 1,
-            calories: 70,
-            image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/Chicken_eggs_20101113.jpg/640px-Chicken_eggs_20101113.jpg"
-        },
-        {
-            name: "Avocado",
-            measure: "unit",
-            amount: 1,
-            calories: 240,
-            image: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/Avocado_Hass_-_single_and_halved.jpg/640px-Avocado_Hass_-_single_and_halved.jpg"
-        },
-        {
-            name: "Bread",
-            measure: "slice",
-            amount: 2,
-            calories: 160,
-            image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Paderborner_Landbrot_Slice.JPG/640px-Paderborner_Landbrot_Slice.JPG"
-        },
-        {
-            name: "Milk",
-            measure: "ml",
-            amount: 250,
-            calories: 103,
-            image: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Glass_of_Milk_%2833657535532%29.jpg/640px-Glass_of_Milk_%2833657535532%29.jpg"
-        },
-    ]
+            id:7,
+            name:'sugar'
+        }
+    ],
+    
+
+      
 }
 export default Data
