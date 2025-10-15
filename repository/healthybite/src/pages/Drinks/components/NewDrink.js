@@ -68,8 +68,8 @@ export const NewDrink = ({ setNewDrink, handleUpdate, categorydrinks, drinktypes
             try {
                 const data = {
                     name: name,
-                    sugar_portion: sugar,
-                    caffeine_portion: caffeine,
+                    sugar_portion: sugar ? Number(sugar) : 0,
+                    caffeine_portion: caffeine ? Number(caffeine) : 0,
                     calories_portion: calories,
                     measure: measure,
                     measure_portion: amount,

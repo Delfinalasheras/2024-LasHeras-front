@@ -11,23 +11,76 @@ import Dashboard from './pages/Dashboard/Dashboard';
 import { Plates } from './pages/Plates/Plates';
 import { Drinks } from './pages/Drinks/Drinks';
 import { Community } from './pages/Community/Community';
+import { createContext, useEffect, useState } from 'react';
+import { fetchUser, getIdToken, getUserNotification, markNotificationAsRead } from './firebaseService';
+import NotificationPopup from './components/NotificationPopup';
+import ProtectedRoute from './components/ProtectedRoute';
+
+export const UserContext = createContext(null);
 
 function App() {
-  const [user]= useAuthState(auth)
+  const [token, setToken]=useState(null)
+  const [user]=useAuthState(auth);
+  const [user_id, setUser_id]= useState(null)
+  const [notifications, setNotifications] = useState([]);
+  const fetchNotification=async()=>{
+    const fetchedNotifications = await getUserNotification(user_id);
+    setNotifications(fetchedNotifications || []);
+  }
+
+  const handleDismissNotification = async (notificationId) => {
+      try {
+          await markNotificationAsRead(notificationId);
+          setNotifications(notifications.filter(notif => notif.id !== notificationId));
+      } catch (err) {
+          console.error("Error dismissing notification:", err);
+      }
+  };
+
+  const get_token=async()=>{
+    try {
+      const token = await getIdToken();
+      setToken(token);
+    } catch (err) {
+      console.error("Error obteniendo el token:", err);
+    }
+  }
+
+  useEffect(() => {
+    console.log("USEEER ", user_id)
+    if (user) {
+      get_token();
+      setUser_id(user.uid);
+    } else {
+      setUser_id(null);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    console.log('user_id ', user_id)
+    if (user_id && token) {
+      fetchNotification();
+    }
+  }, [user_id, token]);
+
   return (
-    <Router>
+    <UserContext.Provider value={{user_id, setUser_id}} >
+      <Router>
+        {user_id && notifications.length> 0 && <NotificationPopup notifications={notifications} onDismiss={handleDismissNotification}/>}
         <Routes>
-          <Route path="/" element={ user ? <Home /> : <Login />} />
-          <Route path="/plates" element={<Plates/>}/>
-          <Route path="/drinks" element={<Drinks/>}/>
-          <Route path="/user-profile" element={<UserProfile />} />
+          <Route path="/" element={<Login />}/>
           <Route path="/resetPassword" element={<ResetPassword />} />
-          <Route path="/category" element={<Category/>} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/community" element={<Community />} />
+
+          <Route path="/home" element={<ProtectedRoute element={<Home />}/>} />
+          <Route path="/plates" element={<ProtectedRoute element={<Plates/>}/>} />
+          <Route path="/drinks" element={<ProtectedRoute element={<Drinks/>}/>} />
+          <Route path="/user-profile" element={<ProtectedRoute element={<UserProfile />} />} />
+          <Route path="/category" element={<ProtectedRoute element={<Category/>} />} />
+          <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />} />
+          <Route path="/community" element={<ProtectedRoute element={<Community />} />} />
         </Routes>
       </Router>
-
+    </UserContext.Provider>
   );
 }
 

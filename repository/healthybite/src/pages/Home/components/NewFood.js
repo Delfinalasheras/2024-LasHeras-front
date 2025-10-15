@@ -18,10 +18,17 @@ const NewFood = ({ setAddFood, setNewFood}) => {
 
     const validateInputs = () => {
         return (
-            name !== '' &&
-            measure !== '' 
+            name.trim() !== '' &&
+            measure.trim() !== '' &&
+            amount > 0 &&
+            calories > 0 &&
+            sodium > 0 &&
+            carbohydrate > 0 &&
+            fat > 0 &&
+            protein > -1
         );
     };
+    
 
     const handleCaloriesChange= (e) => {
         handleInputChange2(parseInt(e.target.value), 0, 500, setCalories);
@@ -126,10 +133,19 @@ const NewFood = ({ setAddFood, setNewFood}) => {
                                 required={inValidation && carbohydrate <= 0}
                                 label="Carbohydrate"
                                 placeholder="448"
-                                className='bg-white rounded-md text-left text-darkGray text-sm p-1 focus:outline-none  py-2 px-3 focus:ring-2 focus:ring-healthyGreen'
                                 value={carbohydrate}
+                                className='bg-white rounded-md text-left text-darkGray text-sm p-1 focus:outline-none  py-2 px-3 focus:ring-2 focus:ring-healthyGreen'
+                                
                                 inputType='number'
-                                onChange={(e)=> handleInputChange(parseInt(e.target.value), 0, 500, setCarbohydrate)}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (value === "") {
+                                        setCarbohydrate("");
+                                    } else {
+                                        handleInputChange(parseInt(value), 0, 500, setCarbohydrate);
+                                    }
+                                }}
+                                
                             />
                             {inValidation && carbohydrate <= 0 && <p className='text-red-500 text-xs'>Carbohydrate must be a positive number.</p>}
                         </div>
@@ -142,7 +158,14 @@ const NewFood = ({ setAddFood, setNewFood}) => {
                                 placeholder="448"
                                 value={fat}
                                 inputType='number'
-                                onChange={(e)=> handleInputChange(parseInt(e.target.value), 0, 500, setFat)}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (value === "") {
+                                        setFat("");
+                                    } else {
+                                        handleInputChange(parseInt(value), 0, 500, setFat);
+                                    }
+                                }}
                             />
                             {inValidation && fat <= 0 && <p className='text-red-500 text-xs'>Fat must be a positive number.</p>}
                         </div>
@@ -155,7 +178,14 @@ const NewFood = ({ setAddFood, setNewFood}) => {
                                 className='bg-white rounded-md text-left text-darkGray text-sm p-1 focus:outline-none  py-2 px-3 focus:ring-2 focus:ring-healthyGreen'
                                 value={protein}
                                 inputType='number'
-                                onChange={(e)=> handleInputChange(parseInt(e.target.value), 0, 500, setProtein)}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (value === "") {
+                                        setProtein("");
+                                    } else {
+                                        handleInputChange(parseInt(value), 0, 500, setProtein);
+                                    }
+                                }}
                             />
                             {inValidation && protein <= 0 && <p className='text-red-500 text-xs'>Protein must be a positive number.</p>}
                         </div>
