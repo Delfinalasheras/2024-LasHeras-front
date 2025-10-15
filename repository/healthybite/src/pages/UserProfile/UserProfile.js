@@ -1,4 +1,4 @@
-import React,{useEffect, useState} from 'react'
+import React,{useContext,useEffect, useState} from 'react'
 import NavBar from '../../components/NavBar'
 import userImg from '../../assets/userImg.jpg'
 import { fetchUser } from '../../firebaseService'
@@ -13,6 +13,7 @@ import PopUp from './components/PopUp'
 import {handleInputChange} from '../inputValidation';
 import Loading from '../../components/Loading'
 import Goals from '../../components/Goals'
+import { UserContext } from '../../App'
 const achievements = {
     1: { 
         name: "Streak 3!", 
@@ -50,7 +51,8 @@ const achievements = {
 
 
 function UserProfile() {
-    const [user, setUser]=useState(null)
+    const [user, setUser]=useState(null);
+    const {user_id}=useContext(UserContext)
     const [surname, setSurname] = useState('');
     const [weight, setWeight] = useState('');
     const [birthDate, setBirthDate] = useState();
@@ -87,7 +89,8 @@ function UserProfile() {
 
     const getUser = async () => {
         try {
-            const userData = await fetchUser();
+            const userData = await fetchUser(user_id);
+            console.log("User Data-profile ", userData)
             setUser(userData);
             setName(userData.name);
             setSurname(userData.surname);
@@ -117,7 +120,7 @@ function UserProfile() {
             achivements: user.achievements,
         };
         try {
-            await editUserData(data);
+            await editUserData(user_id,data);
             console.log('User edited successfully in Firestore');
         } catch (err) {
             console.log('Error editing user: ' + err.message);
@@ -127,15 +130,15 @@ function UserProfile() {
     const editGoals=()=>{
         setOpenGoals(false)
         const updateGoals=async()=>{
-            await editUserData(user)
+            await editUserData(user_id,user)
         }
         updateGoals()
     }
     
 
     useEffect(()=>{
-        getUser()
-    },[])
+        user_id && getUser()
+    },[user_id])
 
     const saveChanges=()=>{
         edit && editUser()
@@ -170,8 +173,6 @@ function UserProfile() {
                         })}
                     </div>
                 </div>
-    
-                {/* Render Unarchived Achievements */}
                 <div className="w-full">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {unarchivedAchievements.map((id) => {
