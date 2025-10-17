@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faCheck, faXmark, faCircleXmark } from '@fortawesome/free-solid-svg-icons'; 
+import { faPlus, faCheck, faXmark, faCircleXmark, faAngleRight } from '@fortawesome/free-solid-svg-icons'; 
 import FoodItem from './FoodItem';
 import Search from './Search';
 import messidepaul from '../../../assets/messidepaul.png'
@@ -10,7 +10,7 @@ import Menu from './Menu';
 import emptyPlate from '../../../assets/emptyPlate.png'
 import emptyGlass from '../../../assets/emptyGlass.png'
 
-const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, selection, setSelection, platesData, drinksData }) => {
+const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, selection, setSelection, platesData, drinksData, user }) => {
     const [searchFood, setSearchFood] = useState(foodData);
     const [addFood, setAddFood] = useState(false);
     const [openMenu, setOpenMenu]=useState(false)
@@ -19,8 +19,7 @@ const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, select
     const [loading, setLoading]=useState(true)
     const [message, setMessage] = useState(false);
     const [show, setShow] =useState(1);
-    const [clickable, setClickable] = useState(true);
-
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const fetchMenu=async()=>{
         try{
             const data= await getProducts()
@@ -40,13 +39,17 @@ const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, select
             fetchMenu()
         }
     }
-    const handleSingleClickAddMeal = () => {
-        if (clickable) {
-            setClickable(false); // Disable further clicks
-            handleAddMeal(); // Call your existing handleAddMeal logic
-            setTimeout(() => {
-                setClickable(true); // Re-enable after a delay (or based on a condition)
-            }, 1000); // Optional delay to prevent excessive clicks
+    const handleSingleClickAddMeal = async () => {
+        if (isSubmitting) return; // Prevent double submission
+        
+        setIsSubmitting(true);
+        
+        try {
+            await handleAddMeal(); // This will now be fast due to optimistic updates
+            // PopUp will close automatically from handleAddMeal in Home.js
+        } catch (error) {
+            console.error('Error in handleSingleClickAddMeal:', error);
+            setIsSubmitting(false); // Re-enable only on error
         }
     };
 
@@ -54,15 +57,13 @@ const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, select
         message && setInterval(()=>setMessage(false), 3000)
     },[message])
 
-    useEffect(()=>{
-        newFood && setMessage('The food was added succesfully!')
-    },[newFood])
+    useEffect(() => {
+        if (newFood) {
+            setMessage('Food was added successfully!');
+            setTimeout(() => setMessage(false), 3000);
+        }
+    }, [newFood]);
 
-    useEffect(()=>{
-
-        setSearchFood(foodData)
-        
-    },[foodData])
 
     useEffect(()=>{
         show === 1 && searchFood!==foodData && setSearchFood(foodData)
@@ -97,28 +98,28 @@ const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, select
                             <Search foodData={show===1 ? foodData : null } platesData={show === 2 ? platesData : null}  drinksData={show === 3 ? drinksData : null}   setSearchFood={setSearchFood} />
                             <div 
                                 onClick={() => setAddFood(true)} 
-                                className="flex w-2/12 sm:w-4/12 flex-row ml-3 justify-center items-center py-2 px-4 rounded-2xl font-semibold text-md text-darkGray font-quicksand hover:cursor-pointer bg-white/70 hover:bg-white/90"
+                                className="flex w-2/12 sm:w-2/12 flex-row ml-3 justify-center items-center py-2 px-4 rounded-2xl font-semibold text-md text-darkGray font-quicksand hover:cursor-pointer bg-white/70 hover:bg-white/90"
                             >
                                 <FontAwesomeIcon icon={faPlus} className="text-darkGray text-lg sm:text-xl" />
                                 {window.innerWidth > '650' && <p className="ml-2 text-center"></p>}
                             </div>
                         </div>
-                        <div className='flex mt-3 justify-around w-full items-center  font-quicksand font-semibold text-sm text-healthyGray'> 
+                        <div className='flex mt-2 justify-around w-full items-center  font-quicksand font-semibold text-sm text-healthyGray'> 
                             <button onClick={()=>setShow(1)} className={`${show===1 ? 'text-healthyDarkGray1  bg-white/40 rounded-t-md font-bold' : 'text-healthyGray1  '} w-1/3 py-2`}>Food</button>
                             <button onClick={()=>setShow(2)} className={`${show===2 ? 'text-healthyDarkGray1  bg-white/40 rounded-t-md font-bold' : 'text-healthyGray1  '} w-1/3 py-2`}>Plate</button>
                             <button onClick={()=>setShow(3)} className={`${show===3 ? 'text-healthyDarkGray1  bg-white/40 rounded-t-md font-bold' : 'text-healthyGray1  '} w-1/3 py-2`}>Drinks</button>
                         </div>
                         {!addFood && ( ((show===1 || show===3) && searchFood?.length > 0) || (show===2 && (searchFood?.mines?.length>0 || searchFood?.others?.length>0) ) ? (
-                            <div className="bg-white/40 p-2 rounded-b-lg w-full max-h-[350px] md:max-h-[500px] lg:max-h-[330px]  overflow-y-auto">
+                            <div className="bg-white/40 p-2 rounded-b-lg w-full max-h-[250px] md:max-h-[500px] lg:max-h-[330px]  overflow-y-auto">
                                 {show===2 && searchFood.mines && searchFood.others ?
                                 <div className='flex flex-col w-full '>
                                     <p className='text-xs font-bold text-healthyGray1 font-quicksand  pb-1 border-b-2 border-healthyGray1 mb-1 w-full text-left'>My plates</p>
                                     {show===2 && searchFood.mines.map((food, index) => (
-                                        <FoodItem key={index} food={food} setSelection={setSelection} />
+                                        <FoodItem key={index} food={food} setSelection={setSelection}  />
                                     ))}
                                     <p className='text-xs font-bold text-healthyGray1 font-quicksand pt-2 pb-1 border-b-2 border-healthyGray1 mb-1 w-full text-left'>Another plates</p>
                                     {show===2 && searchFood.others.map((food, index) => (
-                                        <FoodItem key={index} food={food} setSelection={setSelection} publicPlates={true}/>
+                                        <FoodItem key={index} food={food} setSelection={setSelection} publicPlates={true}  />
                                     ))}
                                 </div>
                                 : searchFood.length > 0 && searchFood.map((food, index) => (
@@ -152,14 +153,18 @@ const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, select
                 )}
                 {selection && (
                     <button 
-                    onClick={handleSingleClickAddMeal} 
-                    className="absolute bottom-2 right-2 font-quicksand text-sm px-3 py-1 flex items-center rounded-xl bg-healthyOrange text-white font-bold hover:cursor-pointer hover:bg-healthyDarkOrange"
-                >
-                    <FontAwesomeIcon icon={faCheck} className="text-white text-lg mr-2" />
-                    Save changes
-                </button>
-                
-                )}
+                        onClick={handleSingleClickAddMeal} 
+                        disabled={isSubmitting}
+                        className={`absolute bottom-2 right-2 font-quicksand text-sm px-3 py-1 flex items-center rounded-xl ${
+                            isSubmitting 
+                                ? 'bg-healthyOrange/50 cursor-not-allowed' 
+                                : 'bg-healthyOrange hover:bg-healthyDarkOrange hover:cursor-pointer'
+                        } text-white font-bold`}
+                    >
+                        <FontAwesomeIcon icon={faCheck} className="text-white text-lg mr-2" />
+                        {isSubmitting ? 'Saving...' : 'Save changes'}
+                    </button>
+                )}  
             </div>
         </div>
     );

@@ -54,6 +54,9 @@ function UserProfile() {
     const [user, setUser]=useState(null);
     const {user_id}=useContext(UserContext)
     const [surname, setSurname] = useState('');
+    const [nameError, setNameError] = useState("");
+    const [surnameError, setSurnameError] = useState("");
+
     const [weight, setWeight] = useState('');
     const [birthDate, setBirthDate] = useState();
     const [height, setHeight] = useState('');
@@ -65,6 +68,18 @@ function UserProfile() {
     const [loading, setLoading]=useState(true)
     const [openGoals, setOpenGoals]=useState(false)
     const [myachievements, setMyAchievements] = useState([]);
+    // Solo permite letras y espacios (sin números ni símbolos)
+     const handleTextInputChange = (value, setValue, setError) => {
+    const regex = /^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]*$/; // permite acentos y espacios
+    if (regex.test(value)) {
+      setValue(value);
+      setError("");
+    } else {
+      setError("Only letters are allowed.");
+    }
+  };
+  
+    
     const handleWeightChange = (e) => {
         handleInputChange(e.target.value, 0, 500, setWeight);
     };
@@ -140,10 +155,16 @@ function UserProfile() {
         user_id && getUser()
     },[user_id])
 
-    const saveChanges=()=>{
-        edit && editUser()
-        setEdit(false)
-    }
+    const saveChanges = () => {
+        if (nameError || surnameError) {
+          setMessage("Please fix the errors before saving.");
+          setInValidation(true);
+          return;
+        }
+        edit && editUser();
+        setEdit(false);
+      };
+      
     const renderAchievements = () => {
         // Separate archived and unarchived trophies
         const archivedAchievements = Object.keys(achievements).filter(id => user?.achievements?.includes(parseInt(id)));
@@ -224,8 +245,26 @@ function UserProfile() {
                     {edit ?
 
                     (user && <div className="flex flex-col  w-full px-2 md:max-h-[400px] overflow-y-auto">
-                        <Input required={inValidation && name===''} label="Name" inputType="text" inputValue={name} placeholder={user.name} onChange={(e)=>setName(e.target.value)} />
-                        <Input required={inValidation && surname===''} label="Surname" inputType="text" inputValue={surname} placeholder={user.surname} onChange={(e)=>setSurname(e.target.value)} />
+                        <Input
+                            required={inValidation && name === ''}
+                            label="Name"
+                            inputType="text"
+                            inputValue={name}
+                            placeholder={user.name}
+                            onChange={(e) => handleTextInputChange(e.target.value, setName, setNameError)}
+                            />
+                            {nameError && <p className="text-red-500 text-xs">{nameError}</p>}
+
+                            <Input
+                            required={inValidation && surname === ''}
+                            label="Surname"
+                            inputType="text"
+                            inputValue={surname}
+                            placeholder={user.surname}
+                            onChange={(e) => handleTextInputChange(e.target.value, setSurname, setSurnameError)}
+                            />
+                            {surnameError && <p className="text-red-500 text-xs">{surnameError}</p>}
+
                         <Input
                             required={inValidation && birthDate === ''}
                             label="Date of birth"

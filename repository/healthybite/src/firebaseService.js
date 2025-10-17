@@ -4,6 +4,7 @@ import { auth, firestore } from "../src/firebaseConfig";
 import { getAuth, verifyPasswordResetCode, confirmPasswordReset, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from 'firebase/auth';
 import axios from "axios";
 import { onAuthStateChanged } from "firebase/auth";
+import { Timestamp } from "firebase/firestore";
 const ruta='http://127.0.0.1:8000'
 let cachedUserUid = null;
 
@@ -123,6 +124,7 @@ export const getUserUid = async () => {
 export const fetchUser=async(user_id)=>{
     try {
         const token = await getIdToken()
+        console.log(token)
         if( !token){
             throw new Error ('Token not found')
         }
@@ -218,7 +220,15 @@ export const fetchFoodByID = async (foodId) => {
 
 const userFoodMeals = async()=>{
     try {
-        const response = await axios.get(`http://127.0.0.1:8000/mealUserDay/${auth.currentUser.uid}`);
+        const token = await getIdToken()
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        const response = await axios.get(`${ruta}/mealUserDay/${auth.currentUser.uid}`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }); 
         return response.data.message.foods; // Adjust this based on your backend response structure
     } catch (error) {
         console.error('Error fetching food by ID:', error);
@@ -230,9 +240,12 @@ const userFoodMeals = async()=>{
 
 export const fetchAllFoods = async () => {
     try {
-        const response = await axios.get(`http://127.0.0.1:8000/Foods/`);
-        console.log(response.data.message.food)
-        return response.data.message.food; // Adjust this based on your backend response structure
+        const token = await getIdToken()
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        const response = await axios.get(`${ruta}/Foods/`);
+        return response.data.message.food;
     } catch (error) {
         console.error('Error fetching foods:', error);
         return []; // Return an empty array or handle the error as needed
@@ -240,55 +253,27 @@ export const fetchAllFoods = async () => {
 };
 
 
-export const addUserFood = async (selection, date) => {
+export const addUserFood = async (user_id,selection, date, amount) => {
     try {
-        const token = await auth.currentUser.getIdToken(); // 👈 obtiene el JWT
-
-        const response = await fetch(`http://127.0.0.1:8000/UserFood_log`, {
+        const token = await getIdToken()
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        const response = await fetch(`${ruta}/UserFood_log`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`,  // 👈 manda el token
+                Authorization: `Bearer ${token}`
             },
-            body: JSON.stringify({
+            body: JSON.stringify( {
+                "id_User": user_id,
                 "id_Food": selection.id_food,
                 "date_ingested": date.toISOString(),
                 "amount_eaten": Number(selection.amount),
             }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.detail || "Something went wrong");
-        }
-
-        console.log("Food added successfully:", data);
-    } catch (error) {
-        console.error("Error adding food:", error);
-    }
-};
-
-export const addNewFood = async (newFood) => {
-    try {
-        const response = await fetch(`http://127.0.0.1:8000/Food_log`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify( {
-                "name": newFood.name,
-                "calories_portion": Number(newFood.calories),
-                "measure": newFood.measure,
-                "measure_portion": Number(newFood.amount),
-                "amount_carbs":  Number(newFood.carbohydrate),
-                "amount_sodium": Number(newFood.sodium),
-                "amount_fat": Number(newFood.fat),
-                "amount_protein": Number(newFood.protein)
-            }),
             
         });
-
+        console.log(user_id,selection.id_food,date.toISOString(),Number(selection.amount))
         const data = await response.json();
 
         if (!response.ok) {
@@ -296,15 +281,54 @@ export const addNewFood = async (newFood) => {
         }
 
         console.log("Food added successfully:", data);
+        return response.id;
     } catch (error) {
         console.error("Error adding food:", error);
     }
 };
+  
+
+  export const addNewFood = async (newFood) => {
+    try {
+      const token = await getIdToken();
+      if (!token) throw new Error('Token not found');
+  
+      const response = await fetch(`${ruta}/Food_log/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: newFood.name,
+          calories_portion: Number(newFood.calories),
+          measure: newFood.measure,
+          measure_portion: Number(newFood.amount),
+          carbohydrates_portion: Number(newFood.carbohydrate),
+          sodium_portion: Number(newFood.sodium),
+          fats_portion: Number(newFood.fat),
+          protein_portion: Number(newFood.protein)
+        }),
+      });
+  
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || "Something went wrong");
+      return data;
+    } catch (error) {
+      console.error("Error adding food:", error);
+      throw error;
+    }
+  };
+  
 
 export const deleteUserFood = async (doc_id) => {
 
     try {
-        await axios.delete(`http://127.0.0.1:8000/DeleteMealUser/${doc_id}`); // Adjust this based on your backend response structure
+        const token = await getIdToken()
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        await axios.delete(`${ruta}/DeleteMealUser/${doc_id}`); // Adjust this based on your backend response structure
     } catch (error) {
         console.error('Error fetching food by ID:', error);
         return null; // Return null or handle the error as needed
@@ -404,38 +428,37 @@ export const deleteCategory=async(category_id)=>{
 
 export const createTotCal = async (data, date) => {
     try {
-        const validDate = date instanceof Date && !isNaN(date) ? date.toISOString() : new Date().toISOString(); // Fallback to current date if invalid
-        console.log("LO QUE LLEGA AL TOT CAL ", data)
-        const response = await fetch(`http://127.0.0.1:8000/CreateTotCaloriesUser/`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                "id_user": auth.currentUser.uid,
-                "day": validDate, // Using the valid date here
-                "totCal": data.calories,
-                "totProt": data.protein,
-                "totSodium": data.sodium,
-                "totCarbs": data.carbs,
-                "totFats": data.fat,
-            }),
-        });
-
-        // Await response.json() before referencing 'data'
-        const responseData = await response.json();
-
-        if (!response.ok) {
-            throw new Error(responseData.detail || "Something went wrong");
-        }
-
-        console.log("Calories entry added successfully:", responseData);
-        return responseData;
+      const token = await getIdToken();
+      if (!token) throw new Error('Token not found');
+  
+      const validDate = date instanceof Date && !isNaN(date) ? date.toISOString() : new Date().toISOString();
+  
+      const response = await fetch(`${ruta}/CreateTotCaloriesUser/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+            id_user: auth.currentUser.uid,
+          day: validDate,
+          totCal: data.calories,
+          totProt: data.protein,
+          totSodium: data.sodium,
+          totCarbs: data.carbs,
+          totFats: data.fat
+        }),
+      });
+  
+      const responseData = await response.json();
+      if (!response.ok) throw new Error(responseData.detail || "Something went wrong");
+      return responseData;
     } catch (error) {
-        console.error("Error adding calories entry:", error);
-        return null;
+      console.error("Error adding calories entry:", error);
+      throw error;
     }
-};
+  };
+  
 
 
 

@@ -227,72 +227,126 @@ function Home() {
             console.log('Error al obtener las categorias: ' , err);
         }
     };
+// Key changes for Home.js - Replace handleAddMeal function
 
-    const handleAddMeal = async () => {
-        try {
-            setLoading(true)
-            await addUserFood(user_id, selection, date, amount);
-            setAmount(null);
-            setSelection(null);
-            setAddMeal(false);
-            console.log('Comida consumida agregada a UserFood > Firestore con éxito');
-            if(platesData && drinksData && foodData){
-                fetchFoods(date)
-            }else{
-                await get_Food_plates_drinks().then(fetchFoods(date))
-            }
-        } catch (error) {
-            console.error('Error al agregar la comida consumida en UserFood > Firestore:', error);
-        }
+const handleAddMeal = async () => {
+    try {
+        const tempId = `temp_${Date.now()}`;
+        
+        const now = new Date();
+        const currentDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+
+        
+        let foodDetails = foodData?.find(f => f.id === selection.id_food) || 
+                         platesData?.mines?.find(p => p.id === selection.id_food) ||
+                         platesData?.others?.find(p => p.id === selection.id_food) ||
+                         drinksData?.find(d => d.id === selection.id_food);
+
+        const newMeal = {
+            id: tempId,
+            id_Food: selection.id_food,
+            amount_eaten: selection.amount,
+            date_ingested: currentDateTime, 
+            name: selection.name,
+            measure: selection.measure || foodDetails?.measure || 'plate',
+            measure_portion: foodDetails?.measure_portion || 1,
+            calories_portion: foodDetails?.calories_portion || Math.round(foodDetails?.calories || 0),
+            carbohydrates_portion: selection.carbohydrates_portion || foodDetails?.carbohydrates_portion || 0,
+            sodium_portion: selection.sodium_portion || foodDetails?.sodium_portion || 0,
+            fats_portion: selection.fats_portion || foodDetails?.fats_portion || 0,
+            protein_portion: selection.protein_portion || foodDetails?.protein_portion || 0,
+            caffeine_portion: foodDetails?.caffeine_portion || 0,
+            sugar_portion: foodDetails?.sugar_portion || 0,
+            public: foodDetails?.public || false,
+            verified: foodDetails?.verified || false
+        };
+
+
+        setUserFood(prev => [...prev, newMeal]);
+        setFilteredFood(prev => [...prev, newMeal]);
+        
+   
+        setAmount(null);
+        setSelection(null);
+        setAddMeal(false);
+
+        const realId = await addUserFood(user_id, selection, currentDateTime, selection.amount);
+        
+
+        setUserFood(prev => prev.map(food => 
+            food.id === tempId ? { ...food, id: realId } : food
+        ));
+        setFilteredFood(prev => prev.map(food => 
+            food.id === tempId ? { ...food, id: realId } : food
+        ));
+        
+        console.log('Meal synced with Firestore successfully');
+        
+    } catch (error) {
+        console.error('Error adding meal:', error);
+        
+
+        setUserFood(prev => prev.filter(food => !food.id.toString().startsWith('temp_')));
+        setFilteredFood(prev => prev.filter(food => !food.id.toString().startsWith('temp_')));
+
+        alert('Failed to add meal. Please try again.');
     }
+}
 
-    useEffect(() => {
-        if(newFood){
-            setLoading(true)
-            newFood && addNewFood(newFood).then(() => {
-                setNewFood(null);
-                fetchFoods()
-            })
-            setLoading(false)
-        }
-    }, [newFood]);
-    
-    const handleDeleteMeal = async (idDoc_user_food) => {
-        try {
-            await deleteUserFood(idDoc_user_food); // Delete from Firebase backend
-            
-            // Update the local state for both userFood and filteredFood
-            setUserFood((prevUserFood) => prevUserFood.filter((food) => food.id !== idDoc_user_food)); 
-            setFilteredFood((prevFilteredFood) => prevFilteredFood.filter((food) => food.id !== idDoc_user_food));
-            
-            console.log('Comida eliminada de UserFood > Firestore con éxito');
-        } catch (err) {
-            console.log('Error al eliminar la comida: ' , err.message);
-        }
-    };
-    
+// Also update handleDeleteMeal to be more optimistic
+const handleDeleteMeal = async (idDoc_user_food) => {
+    try {
 
-    const handleEditFoodConsumed = async  (idDoc_user_food, data) => {
-        try {
-            await editUserFood(idDoc_user_food, data); 
-            setLoading(true)
-            fetchFoods(date)
-            console.log('Comida editada de UserFood > Firestore con éxito');
-            setLoading(false)
-        } catch (err) {
-            console.log('Error al editar la comida: '  ,err.message);
-        }
-    };
+        setUserFood((prevUserFood) => prevUserFood.filter((food) => food.id !== idDoc_user_food)); 
+        setFilteredFood((prevFilteredFood) => prevFilteredFood.filter((food) => food.id !== idDoc_user_food));
+        
+
+        await deleteUserFood(idDoc_user_food);
+        console.log('Meal deleted from Firestore successfully');
+        
+    } catch (err) {
+        console.error('Error deleting meal:', err.message);
+        fetchFoods(date);
+    }
+};
+
+// Update handleEditFoodConsumed to be more optimistic
+const handleEditFoodConsumed = async (idDoc_user_food, data) => {
+    try {
+
+        setUserFood(prev => prev.map(food => 
+            food.id === idDoc_user_food ? { ...food, amount_eaten: data.amount_eaten } : food
+        ));
+        setFilteredFood(prev => prev.map(food => 
+            food.id === idDoc_user_food ? { ...food, amount_eaten: data.amount_eaten } : food
+        ));
+        
+        await editUserFood(idDoc_user_food, data);
+        console.log('Meal edited in Firestore successfully');
+        
+    } catch (err) {
+        console.error('Error editing meal:', err.message);
+
+        fetchFoods(date);
+    }
+};
+useEffect(() => {
+    if(newFood){
+        setLoading(true)
+        newFood && addNewFood(newFood).then(() => {
+            setNewFood(null);
+            fetchFoods()
+        })
+        setLoading(false)
+    }
+}, [newFood]);
 
     const fetchData = async() => {
-        console.log("SE ESTA EJECUTANDO FETCH DATA")
         !user && getUserData()
-        console.log("TERMINO DE EJECUTARSE FETCH DATA")
     };
 
     useEffect(()=>{
         setLoading(true)
-        console.log(`SE ESTA EJECUTANDO useEffect [${date}}]`)
 
         if(user_id){
             user ? fetchFoods(date) : fetchData().then(()=> fetchFoods(date));

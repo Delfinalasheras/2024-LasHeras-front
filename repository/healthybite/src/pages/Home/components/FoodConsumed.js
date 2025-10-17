@@ -5,19 +5,71 @@ import React, { useEffect, useState } from "react";
 import DeletePopUp from '../../../components/DeletePopUp';
 
 
-const FoodConsumed = ({ usfood, handleDeleteMeal , handleEditFoodConsumed}) => {
+
+const FoodConsumed = ({ usfood, handleDeleteMeal , handleEditFoodConsumed, drink}) => {
     const [edit, setEdit]=useState(false)
     const [time, setTime]=useState(new Date(usfood.date_ingested))
     const [amount, setAmount]=useState(usfood.amount_eaten)
     const [deleteItem, setDeleteItem]=useState(false)
     const [clickable, setClickable] = useState(true);
     const [details, setDetails]=useState(false)
-
-    useEffect(()=>{
-        console.log('USFOOD >>>>>>>>>>>>>> ', usfood)
-    },[])
-
-
+    const info = [
+        {
+            name: 'Calories',
+            ammount: usfood.calories_portion * usfood.amount_eaten,
+            measure: usfood.measure_portion,
+            unit: 'cal',
+            carb: false,
+        },
+        ...(drink
+        ? [
+            {
+                name: 'Sugar',
+                ammount: usfood.sugar_portion * usfood.amount_eaten,
+                measure: usfood.measure_portion,
+                unit: 'g',
+                carb: false,
+            },
+            {
+                name: 'Caffeine',
+                ammount: usfood.caffeine_portion * usfood.amount_eaten,
+                measure: usfood.measure_portion,
+                unit: 'mg',
+                carb: false,
+            },
+            ]
+        : [
+            {
+                name: 'Carbohydrates',
+                ammount: usfood.carbohydrates_portion * usfood.amount_eaten,
+                measure: usfood.measure_portion,
+                unit: 'g',
+                carb: true,
+            },
+            {
+                name: 'Fats',
+                ammount: usfood.fats_portion * usfood.amount_eaten,
+                measure: usfood.measure_portion,
+                unit: 'mg',
+                carb: false,
+            },
+            {
+                name: 'Protein',
+                ammount: usfood.protein_portion * usfood.amount_eaten,
+                measure: usfood.measure_portion,
+                unit: 'mg',
+                carb: false,
+            },
+            {
+                name: 'Sodium',
+                ammount: usfood.sodium_portion * usfood.amount_eaten,
+                measure: usfood.measure_portion,
+                unit: 'mg',
+                carb: false,
+            },
+            ]),
+    ];
+    
     const handleChange=()=>{
         if(amount >0 )
         {const updatedUsfood = {
@@ -78,27 +130,14 @@ const FoodConsumed = ({ usfood, handleDeleteMeal , handleEditFoodConsumed}) => {
                     </div>}
                 </div>
         </div>
-        {details && <div className='w-full bg-healthyGreen/60 rounded-b-2xl font-quicksand py-2 flex flex-wrap justify-around px-2 items-center'>
-            <div className='flex justify-center min-w-20 sm:min-w-12  flex-col items-center text-white text-sm mx-2'>
-                <p className='font-semibold '>Calories</p>
-                <p>{Math.ceil((usfood.calories_portion * usfood.amount_eaten) / usfood.measure_portion)} cal</p>
-            </div>
-            <div className='flex justify-center min-w-20 sm:min-w-12  flex-col items-center text-white text-sm'>
-                <p className='font-semibold '>Sodium</p>
-                <p>{Math.ceil((usfood.sodium_portion * usfood.amount_eaten) / usfood.measure_portion)} mg</p>
-            </div>
-            <div className='flex justify-center min-w-20 sm:min-w-12  flex-col items-center text-white text-sm'>
-                <p className='font-semibold '>Carbohydrates</p>
-                <p>{Math.ceil((usfood.carbohydrates_portion * usfood.amount_eaten) / usfood.measure_portion)} g</p>
-            </div>
-            <div className='flex justify-center min-w-20 sm:min-w-12 mt-3 sm:mt-0  flex-col items-center text-white text-sm'>
-                <p className='font-semibold '>Fat</p>
-                <p>{Math.ceil((usfood.fats_portion * usfood.amount_eaten) / usfood.measure_portion)} g</p>
-            </div>
-            <div className='flex justify-center min-w-20 sm:min-w-12 mt-3 sm:mt-0  flex-col items-center text-white text-sm'>
-                <p className='font-semibold '>Protein</p>
-                <p>{Math.ceil((usfood.protein_portion * usfood.amount_eaten) / usfood.measure_portion)} g</p>
-            </div>
+        {details && 
+        <div className='w-full bg-healthyGreen/60 rounded-b-2xl font-quicksand py-2 flex flex-wrap justify-around sm:px-2 items-center'>
+            {info.map((item, index)=>
+                <div className={`flex justify-center ${item.carb ? 'grow  sm:min-w-12 sm:max-w-20': 'min-w-16'}  flex-col items-center text-white text-sm`}>
+        <p className='font-semibold '>{item.name}</p>
+        <p>{Math.ceil(item.ammount / item.measure)} {item.unit}</p>
+    </div>
+            )}
         </div>}
     </div>}</>
     );
