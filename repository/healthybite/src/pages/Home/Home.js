@@ -7,7 +7,7 @@ import NavBar from "../../components/NavBar";
 import Calories from "./components/Calories";
 import FoodConsumed from "./components/FoodConsumed";
 import PopUp from "./components/PopUp";
-import { addGoal,getstreak,addNewFood,getPlatesNotUser, addUserFood, fetchAllFoods, fetchUserFoods, deleteUserFood , fetchFoodByID, editUserFood, getCategories, getDefaultCategories,getProdByID, getProducts,getBarCategory,updateCategoryDefault, getUserDrinks,getUserPlates, getDrinkByID, getPlate_ByID, getGroupedDrinkTypes, getPublicPlates, fetchUser, editUserData, } from "../../firebaseService";
+import { addGoal,getstreak,addNewFood,getPlatesNotUser, addUserFood, fetchAllFoods, fetchUserFoods, deleteUserFood , fetchFoodByID, editUserFood, getCategories, getDefaultCategories,getProdByID, getProducts,getBarCategory, getUserDrinks,getUserPlates, getDrinkByID, getPlate_ByID, getGroupedDrinkTypes, getPublicPlates, fetchUser, editUserData, } from "../../firebaseService";
 import Filter from "./components/Filter";
 import StreakCounter from "./components/StreakCounter";
 import Loading from "../../components/Loading";
@@ -77,10 +77,10 @@ function Home() {
                 const streakValue = await getstreak(user_id);
                 setStreak(streakValue && streakValue.length>0 ? streakValue[0] : 0 );
                 if (streakValue?.length>0 && streakValue>2){
-                    addGoal(user_id, 1)
+                    addGoal(1)
                 }
                 else if (streakValue?.length>0 &&  streakValue>=10){
-                    addGoal(user_id, 2)
+                    addGoal( 2)
                 }
             } catch (error) {
                 console.error("Error fetching streak:", error);

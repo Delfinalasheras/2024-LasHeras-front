@@ -10,7 +10,7 @@ let cachedUserUid = null;
 
 export const getIdToken = async () => {
     const currentUser = auth.currentUser;
-    if (!currentUser) return null; // ✅ en vez de tirar error
+    if (!currentUser) return null; 
     return await currentUser.getIdToken();
   };
 
@@ -128,12 +128,10 @@ export const fetchUser=async(user_id)=>{
         if( !token){
             throw new Error ('Token not found')
         }
-        const response = await axios.get(`${ruta}/getUser/${user_id}`,{
-            headers: {
-                Authorization: `Bearer ${token}`
-              }
-              
-        });
+        const response = await axios.get(`${ruta}/getUser`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
         console.log("RESPONSE DATA",response.data)
         return response.data.user; // Adjust this based on your backend response structure
     } catch (error) {
@@ -143,14 +141,14 @@ export const fetchUser=async(user_id)=>{
 }
   
 
-export const editUserData=async(user_id,data)=>{
+export const editUserData=async(data)=>{
     
     try {
         const token = await getIdToken()
         if( !token){
             throw new Error ('Token not found')
         }
-        const response = await axios.put(`${ruta}/update_user/${user_id}`, data,{
+        const response = await axios.put(`${ruta}/update_user/`, data,{
             headers: {
                 Authorization: `Bearer ${token}`
             }
@@ -224,7 +222,7 @@ const userFoodMeals = async()=>{
         if( !token){
             throw new Error ('Token not found')
         }
-        const response = await axios.get(`${ruta}/mealUserDay/${auth.currentUser.uid}`, {
+        const response = await axios.get(`${ruta}/mealUserDay/`, {
             headers: {
                 Authorization: `Bearer ${token}`
             }
@@ -292,7 +290,7 @@ export const addUserFood = async (user_id,selection, date, amount) => {
     try {
       const token = await getIdToken();
       if (!token) throw new Error('Token not found');
-  
+    console.log("NEW FOOD DATA", newFood)
       const response = await fetch(`${ruta}/Food_log/`, {
         method: "POST",
         headers: {
@@ -337,9 +335,12 @@ export const deleteUserFood = async (doc_id) => {
 
 
 export const editUserFood = async (doc_id,data) => {
-
     try {
-        await axios.put(`http://127.0.0.1:8000/UpdateUserFood/${doc_id}`,data); // Adjust this based on your backend response structure
+        const token = await getIdToken()
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        await axios.put(`${ruta}/UpdateUserFood/${doc_id}`,data);
     } catch (error) {
         console.error('Error fetching food by ID:', error);
         return null; // Return null or handle the error as needed
@@ -347,10 +348,17 @@ export const editUserFood = async (doc_id,data) => {
 };
 
 export const getCategories = async()=>{
-    const uid=auth.currentUser.uid
     try {
-        const response = await axios.get(`http://127.0.0.1:8000/GetCategoryUser/${uid}`);
-        return response.data.message.categories; // Adjust this based on your backend response structure
+        const token = await getIdToken()
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        const response=await axios.get(`${ruta}/GetCategoryUser`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          
+        return response.data.message.categories;
     } catch (error) {
         console.error('Error fetching categories :', error);
         return null; // Return null or handle the error as needed
@@ -358,9 +366,8 @@ export const getCategories = async()=>{
 }
 
 export const getDefaultCategories = async () => {
-    const uid = auth.currentUser.uid;
     try {
-        const response = await axios.get(`http://127.0.0.1:8000/GetCategoryUser/default`);
+        const response = await axios.get(`${ruta}/GetDefaultCategory`);
         return response.data.message.categories; // Adjust this based on your backend response structure
     } catch (error) {
         console.error('Error fetching default categories:', error);
@@ -369,6 +376,7 @@ export const getDefaultCategories = async () => {
 };
 
 export const getBarCategory = async () => {
+    
     try {
         const defaultCategories = await getDefaultCategories();
         console.log('Default Categories:', defaultCategories); // Log all categories
@@ -387,39 +395,54 @@ export const getBarCategory = async () => {
 
 
 
-export const createCategory =async (data)=>{
-    const uid=auth.currentUser.uid
-    try{
-        const response = await axios.post(`http://127.0.0.1:8000/CreateCategory/`, {...data,id_User: uid });
-        return response.data
-    }catch(error){
-        console.error('Error adding new category: ', error);
-        return null;
+export const createCategory = async (data) => {
+    try {
+      const token = await getIdToken();
+      if (!token) throw new Error('Token not found');
+     const { id_User, ...payload } = data;
+  
+      console.log("category data to send", payload);
+  
+      const response = await axios.post(`${ruta}/CreateCategory`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+  
+      return response.data;
+    } catch (error) {
+      console.error('Error adding new category: ', error);
+      return null;
     }
-}
+  };
+  
 
 export const updateCategory=async(data,category_id)=>{
-    try{
-        const response = await axios.put(`http://127.0.0.1:8000/UpdateCategory/${category_id}`,{...data,id_User: auth.currentUser.uid });
-        return response.data
-    }catch(error){
-        console.error('Error updating category by id: ', error);
-        return null;
+    try {
+        const token = await getIdToken()
+        console.log("ACTUALIZAR CAT",data)
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        const response = await axios.put(`${ruta}/UpdateCategory/${category_id}`, data);
+        
+        return response.data; // Adjust this based on your backend response structure
+    } catch (error) {
+        console.error('Error editing category:', error);
+        return null; // Return null or handle the error as needed
     }
 }
-export const updateCategoryDefault=async(data,category_id)=>{
-    try{
-        const response = await axios.put(`http://127.0.0.1:8000/UpdateCategory/${category_id}`,{...data,id_User: 'default' });
-        return response.data
-    }catch(error){
-        console.error('Error updating category by id: ', error);
-        return null;
-    }
-}
+// export const updateCategoryDefault=async(data,category_id)=>{
+//     try{
+//         const response = await axios.put(`${ruta}/UpdateCategory/${category_id}`,{...data,id_User: 'default' });
+//         return response.data
+//     }catch(error){
+//         console.error('Error updating category by id: ', error);
+//         return null;
+//     }
+// }
 
 export const deleteCategory=async(category_id)=>{
     try {
-        await axios.delete(`http://127.0.0.1:8000/DeleteCategory/${category_id}`); 
+        await axios.delete(`${ruta}/DeleteCategory/${category_id}`); 
     } catch (error) {
         console.error('Error deleting category by ID:', error);
         return null; 
@@ -440,7 +463,6 @@ export const createTotCal = async (data, date) => {
           "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
-            id_user: auth.currentUser.uid,
           day: validDate,
           totCal: data.calories,
           totProt: data.protein,
@@ -464,12 +486,9 @@ export const createTotCal = async (data, date) => {
 
 export const UpdateTotCal = async (totcal_id, data, date) => {
     try {
-        // Ensure the date is in the correct format
-        const validDate = date instanceof Date && !isNaN(date) ? date.toISOString() : new Date().toISOString(); // Fallback to current date if invalid
 
-        // Prepare payload matching backend expectations
+        const validDate = date instanceof Date && !isNaN(date) ? date.toISOString() : new Date().toISOString();
         const payload = {
-            id_user: auth.currentUser.uid,
             day: validDate,   // Using "day" instead of "date" to match the model
             totCal: data.calories,
             totProt: data.protein,
@@ -481,7 +500,7 @@ export const UpdateTotCal = async (totcal_id, data, date) => {
         console.log("Payload:", payload); // Log to confirm structure before sending
 
         // Send the request
-        await axios.put(`http://127.0.0.1:8000/UpdateTotCaloriesUser/${totcal_id}`, payload); 
+        await axios.put(`${ruta}/UpdateTotCaloriesUser/${totcal_id}`, payload); 
     } catch (error) {
         console.error('Error updating total calories:', error);
         return null; // Return null or handle the error as needed
@@ -584,7 +603,7 @@ export const getCaloriesByCategories= ( userCalories, categories, foods, barFood
 export const getTotCalUser=async()=>{
     const uid=auth.currentUser.uid
     if(uid){try {
-        const response = await axios.get(`http://127.0.0.1:8000/GetTotCalUser/${uid}`);
+        const response = await axios.get(`${ruta}/GetTotCalUser`);
         return response.data.message.totCals; // Adjust this based on your backend response structure
     } catch (error) {
         console.error('Error fetching categories :', error);
@@ -682,19 +701,19 @@ export const getProdByID= async(prod_id)=>{
     const food=response.data.product
     return food
 }
-
-
-// things that need to be deployed
 export const createplate = async (selection) => {
     try {
+        const token = await getIdToken();
+        if (!token) throw new Error('Token not found');
+  
         console.log("PLATO", selection)
-        const response = await fetch("http://127.0.0.1:8000/CreatePlate/", {
+        const response = await fetch(`${ruta}/CreatePlate/`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
             },
             body: JSON.stringify( {
-                "id_User": auth.currentUser.uid,
                 "ingredients": selection.ingredients,
                 "name": selection.name,
                 "calories_portion": selection?.calories_portion || 0,
@@ -733,7 +752,7 @@ export const getUserPlates = async () => {
     }
     const uid = user.uid;
     try {
-        const response = await axios.get(`http://127.0.0.1:8000/GetPlatesUser/${uid}`);
+        const response = await axios.get(`${ruta}/GetPlatesUser/`);
         return response.data.message.Plates; // Adjust this based on your backend response structure
     } catch (error) {
         console.error('Error fetching plates :', error);
@@ -743,7 +762,7 @@ export const getUserPlates = async () => {
 export const updatePlate=async(data,plate_id)=>{
     try{
         console.log("PLATO",data)
-        const response = await axios.put(`http://127.0.0.1:8000/UpdatePlate/${plate_id}`,{...data,id_User: auth.currentUser.uid });
+        const response = await axios.put(`${ruta}/UpdatePlate/${plate_id}`,{...data,id_User: auth.currentUser.uid });
         return response.data
     }catch(error){
         console.error('Error updating plate by id: ', error);
@@ -752,21 +771,21 @@ export const updatePlate=async(data,plate_id)=>{
 }
 export const deleteplate=async(plate_id)=>{
     try {
-        await axios.delete(`http://127.0.0.1:8000/DeletePlate/${plate_id}`); 
+        await axios.delete(`${ruta}/DeletePlate/${plate_id}`); 
     } catch (error) {
         console.error('Error deleting plate by ID:', error);
         return null; 
     }
 }
+// BEBIDAS
 export const fechDrinkTypes = async () =>{
     const user = auth.currentUser;
     if (!user) {
         console.error("User is not authenticated");
         return null;
     }
-    const uid = user.uid;
     try {
-        const response = await axios.get(`http://127.0.0.1:8000/getUserDrinkType/${uid}`);
+        const response = await axios.get(`${ruta}/getUserDrinkType/`);
         return response.data.message.drinkType; // Adjust this based on your backend response structure
     } catch (error) {
         console.error('Error fetching typedrinks :', error);
@@ -775,7 +794,7 @@ export const fechDrinkTypes = async () =>{
 }
 export const createDrinkType = async (selection) => {
     try {
-        const response = await fetch('http://127.0.0.1:8000/drinkType_log', {
+        const response = await fetch(`${ruta}/drinkType_log`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -810,7 +829,7 @@ export const getUserDrinks = async () =>{
     }
     const uid = user.uid;
     try {
-        const response = await axios.get(`http://127.0.0.1:8000/GetDrinks/${uid}`);
+        const response = await axios.get(`${ruta}/GetDrinks/`);
         return response.data.message.Drinks; // Adjust this based on your backend response structure
     } catch (error) {
         console.error('Error fetching typedrinks :', error);
@@ -819,11 +838,13 @@ export const getUserDrinks = async () =>{
 }
 export const createDrink = async (selection) => {
     try {
-        console.log(selection)
-        const response = await fetch('http://127.0.0.1:8000/drink_log', {
+        const token = await getIdToken();
+        if (!token) throw new Error('Token not found');
+        const response = await fetch(`${ruta}/drink_log`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
             },
             body: JSON.stringify( {
                 "name": selection.name,
@@ -833,19 +854,15 @@ export const createDrink = async (selection) => {
                 "measure": selection.measure,
                 "measure_portion": selection.measure_portion,
                 "typeOfDrink": selection.typeOfDrink,
-                "id_User": auth.currentUser.uid,
             }),
             
         });
 
         const data = await response.json();
-
         if (!response.ok) {
             throw new Error(data.detail || "Something went wrong");
             
         }
-        
-
         console.log("drink entry added successfully:", data);
         return response.data.message.drinkType_id;
     } catch (error) {
@@ -856,7 +873,7 @@ export const createDrink = async (selection) => {
 export const deleteDrink=async(drink_id)=>{
     try {
         console.log(drink_id)
-        await axios.delete(`http://127.0.0.1:8000/DeleteDrink/${drink_id}`); 
+        await axios.delete(`${ruta}/DeleteDrink/${drink_id}`); 
     } catch (error) {
         console.error('Error deleting plateFood by ID:', error);
         return null; 
@@ -866,7 +883,7 @@ export const updateDrink = async (doc_id,data) => {
 
     try {
         console.log(doc_id,data)
-        await axios.put(`http://127.0.0.1:8000/UpdateDrink/${doc_id}`,{...data,id_User: auth.currentUser.uid }); // Adjust this based on your backend response structure
+        await axios.put(`${ruta}/UpdateDrink/${doc_id}`,{...data}); // Adjust this based on your backend response structure
     } catch (error) {
         console.error('Error updating drink by ID:', error);
         return null; // Return null or handle the error as needed
@@ -874,21 +891,21 @@ export const updateDrink = async (doc_id,data) => {
 };
 export const deleteDrinkType = async (doc_id) => {
     try {
-        await axios.delete(`http://127.0.0.1:8000/DeleteDrinkType/${doc_id}`); // Adjust this based on your backend response structure
+        await axios.delete(`${ruta}/DeleteDrinkType/${doc_id}`); // Adjust this based on your backend response structure
     } catch (error) {
         console.error('Error deleting drinktype by ID:', error);
         return null; // Return null or handle the error as needed
     }
 };
 export const getDrinkByID = async (drink_id) => {
-    const response = await axios.get(`http://127.0.0.1:8000/DrinkById/${drink_id}`);
+    const response = await axios.get(`${ruta}/DrinkById/${drink_id}`);
     const drink=response.data.message.drink
     console.log("drink", drink)
     return drink
 
 }
 export const getPlate_ByID = async (plate_id) => {
-    const response = await axios.get(`http://127.0.0.1:8000/GetPlateByID/${plate_id}`);
+    const response = await axios.get(`${ruta}/GetPlateByID/${plate_id}`);
     const drink=response.data.message.plate
     console.log("PLATOOOOOOOOOO", drink)
     return drink
@@ -896,19 +913,19 @@ export const getPlate_ByID = async (plate_id) => {
 }
 
 export const getGroupedDrinkTypes = async () => {
-    const response = await axios.get(`http://127.0.0.1:8000/getUserGroupDrinkType/${auth.currentUser.uid}`);
+    const response = await axios.get(`${ruta}/getUserGroupDrinkType/${auth.currentUser.uid}`);
     const drink=response.data.Drinks
     return drink
 
 }
 
 export const getPublicPlates = async () => {
-    const response = await axios.get(`http://127.0.0.1:8000/GetPlatePublicPlates/`)
+    const response = await axios.get(`${ruta}/GetPlatePublicPlates/`)
     const plates = response.data.Plates
     return plates
 }
 export const PlateReviews = async () => {
-    const response = await axios.get(`http://127.0.0.1:8000/PlateReviews/`)
+    const response = await axios.get(`${ruta}/PlateReviews/`)
     const review = response.data.Review
     return review
 }
@@ -916,7 +933,7 @@ export const PlateReviews = async () => {
 export const updateComments = async (doc_id, data) => {
     try {
         console.log("Updating comments:", { doc_id, data });
-        const response = await axios.put(`http://127.0.0.1:8000/UpdateReview/${doc_id}`, data); // Check if you need {...data}
+        const response = await axios.put(`${ruta}/UpdateReview/${doc_id}`, data); // Check if you need {...data}
         
         // Log the response from the server
         console.log("Server response:", response.data);
@@ -931,7 +948,7 @@ export const updateComments = async (doc_id, data) => {
 export const createReview = async (selection) => {
     try {
         console.log(selection)
-        const response = await fetch('http://127.0.0.1:8000/newReview', {
+        const response = await fetch(`${ruta}/newReview`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -962,20 +979,20 @@ export const createReview = async (selection) => {
 
 export const getstreak = async () => {
     const user_id  = auth.currentUser.uid
-    const response = await axios.get(`http://127.0.0.1:8000/Streak/${user_id}`,)
+    const response = await axios.get(`${ruta}/Streak/${user_id}`,)
     const streak = response.data.message
     return streak
 }
 export const getUserNotification = async () => {
     const user_id  = auth.currentUser.uid
-    const response = await axios.get(`http://127.0.0.1:8000/getUserNotifications/${user_id}`,)
+    const response = await axios.get(`${ruta}/getUserNotifications/${user_id}`,)
     const notifications = response.data.notifications
     return notifications
 }
 export const markNotificationAsRead = async (doc_id) => {
     try {
         console.log("Updating comments:", { doc_id });
-        const response = await axios.put(`http://127.0.0.1:8000/markNotificationAsRead/${doc_id}`); // Check if you need {...data}
+        const response = await axios.put(`${ruta}/markNotificationAsRead/${doc_id}`); // Check if you need {...data}
         
         console.log("Server response:", response);
 
@@ -988,14 +1005,22 @@ export const markNotificationAsRead = async (doc_id) => {
 };
 export const getPlatesNotUser = async () => {
     const user_id  = auth.currentUser.uid
-    const response = await axios.get(`http://127.0.0.1:8000/PublicplatesNotFromUser/${user_id}`,)
+    const response = await axios.get(`${ruta}/PublicplatesNotFromUser/${user_id}`,)
     const plates = response.data.Plates
     return plates
 }
 export const addGoal = async (goal_id) => {
-    const user_id = auth.currentUser.uid;
-    const response = await axios.get(`http://127.0.0.1:8000/addGoal/${user_id}`, {
-        params: { goal_id }
-    });
+    try {
+        const token = await getIdToken()
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        const response=await axios.post(`${ruta}/addGoal`, 
+        { achivement_id: goal_id }, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+    
     return response;
+    }catch (error) {return null;}
 }

@@ -11,10 +11,10 @@ const DrinkItem = ({ drink, typeOfDrinks, handleUpdate }) => {
 
     const [options, setOption] = useState(false);
     const [message, setMessage] = useState('');
-    const [typeSelected, setTypeSelected] = useState(drink.type);
+    const [typeSelected, setTypeSelected] = useState(drink.typeOfDrink);  // Fixed: Was drink.type
     const [index, setIndex] = useState(() => {
         const initialIndex = typeOfDrinks.findIndex(item => item.id === drink.typeOfDrink);
-        return initialIndex !== -1 ? initialIndex : 0; // Default to 0 if not found
+        return initialIndex !== -1 ? initialIndex : 0;
     });
     const [clickable, setClickable] = useState(true);
 
@@ -34,15 +34,15 @@ const DrinkItem = ({ drink, typeOfDrinks, handleUpdate }) => {
         setCalories(drink.calories_portion || "");
         setAmount(drink.measure_portion || "");
         setMeasure(drink.measure || "");
-        setTypeSelected(drink.type); // Reset typeSelected as well
-    }, [drink]); // Add drink as a dependency
+        setTypeSelected(drink.typeOfDrink);  // Fixed: Was drink.type
+    }, [drink]);
 
     useEffect(() => {
         if (message) {
             const timer = setTimeout(() => {
-                setMessage('');  // Clear the message after 3 seconds (3000ms)
+                setMessage('');
             }, 3000);
-            return () => clearTimeout(timer);  // Cleanup the timeout if the component unmounts or message changes
+            return () => clearTimeout(timer);
         }
     }, [message]);
 
@@ -60,29 +60,29 @@ const DrinkItem = ({ drink, typeOfDrinks, handleUpdate }) => {
     
         if (!name || !measure || !amount || !calories) {
             setMessage("Please fill all the fields");
-            return;  // Stop execution if validation fails
+            return;
         }
     
         const data = {
             name: name,
-            sugar_portion: sugar,
+            sugar_portion: sugar || 0,  // Added fallback
             caffeine_portion: caffeine || 0,
             calories_portion: calories || 0,
-            measure: measure|| 0,
-            measure_portion: amount|| 0,
+            measure: measure,  // Removed || 0
+            measure_portion: amount || 0,
             typeOfDrink: typeSelected,
         };
     
         try {
             await updateDrink(drink.id, data);
-            console.log("Data to update:", data);  // Check the data object structure
+            console.log("Data to update:", data);
     
-            setMessage('Drink updated successfully'); // Success message
-            setEdit(false);  // Close the edit form
-            handleUpdate();  // Trigger the parent component to re-fetch the updated data
+            setMessage('Drink updated successfully');
+            setEdit(false);
+            handleUpdate();
             console.log('Drink updated successfully');
         } catch (error) {
-            setMessage('Error updating drink: ' + error.message); // Error message
+            setMessage('Error updating drink: ' + error.message);
             console.log('Error updating drink: ', error);
         }
     };
@@ -122,12 +122,12 @@ const DrinkItem = ({ drink, typeOfDrinks, handleUpdate }) => {
         const newValue = e.target.value;
 
         if (newValue === "") {
-            setValue(""); 
+            setValue(0);  // Fixed: Default to 0 instead of ""
             return;
         }
         const parsedValue = parseInt(newValue, 10);
         if (!isNaN(parsedValue)) {
-            handleInputChange(parsedValue, 0, 1000, setValue); // Here the min is 0 and max is 1000, you can adjust accordingly
+            handleInputChange(parsedValue, 0, 1000, setValue);
         }
     };
 
@@ -232,14 +232,13 @@ const DrinkItem = ({ drink, typeOfDrinks, handleUpdate }) => {
                                             onClick={() => {
                                                 const nextIndex = (typeOfDrinks.findIndex(type => type.id === typeSelected) + 1) % typeOfDrinks.length;
                                                 setTypeSelected(typeOfDrinks[nextIndex]?.id);
-                                                setCaretClicked(true);  // Set caretClicked to true once the user clicks the caret
+                                                setCaretClicked(true);
                                             }} 
                                             icon={faCaretRight} 
                                             className='text-white cursor-pointer bg-healthyOrange p-1 px-2 text-xl hover:bg-healthyOrange/70 rounded-r-full' 
                                         />
                                     </div>
                                 </div>
-
 
                                 <div onClick={handleEditDrink} className='hover:cursor-pointer bg-healthyOrange shadow-md py-1 rounded-full mx-3 my-1 flex flex-row items-center justify-center w-36'>
                                     <FontAwesomeIcon icon={faBookmark} className='text-white text-sm' />

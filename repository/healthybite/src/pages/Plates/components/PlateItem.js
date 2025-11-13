@@ -182,7 +182,7 @@ export const PlateItem = ({ plateDetail, foodData, handleupdatePlates,setSuccess
                             <div className="flex flex-col justify-center items-start ml-3">
                                 <p className="font-semibold text-healthyDarkOrange">{plate.name}</p>
                                 <p className="text-xs text-healthyDarkOrange">
-                                    {foodPlate.reduce((acc, item) => acc + (item.calories_portion * item.amount), 0)} calories
+                                    {foodPlate.reduce((acc, item) => acc + ((item.calories_portion * item.amount)/item.measure_portion), 0)} calories
                                 </p>
                             </div>
                         </div>
