@@ -14,16 +14,31 @@ const NewFood = ({ setAddFood, setNewFood }) => {
     const [carbohydrate, setCarbohydrate] = useState('');
     const [fat, setFat] = useState('');
     const [protein, setProtein] = useState('');
+    const [timeDay, setTimeDay] = useState([]);
 
+
+    const toggleTimeDay = (value) => {
+        setTimeDay(prev => {
+            if (prev.includes(value)) {
+                return prev.filter(v => v !== value);
+            } else {
+                return [...prev, value];
+            }
+        });
+    };
+    
     // Updated: Only validate required fields (name, measure, amount > 0, calories > 0)
     const validateInputs = () => {
         return (
             name.trim() !== '' &&
             measure.trim() !== '' &&
             amount > 0 &&
-            calories > 0
+            calories > 0 &&
+            timeDay.length > 0
         );
     };
+    
+    
 
     const handleCaloriesChange = (e) => {
         handleInputChange2(parseInt(e.target.value), 0, 500, setCalories);
@@ -32,7 +47,7 @@ const NewFood = ({ setAddFood, setNewFood }) => {
     const save = () => {
         if (validateInputs()) {
             setInValidation(false);
-            setNewFood({ name, measure, amount, calories, sodium, carbohydrate, fat, protein });
+            setNewFood({ name, measure, amount, calories, sodium, carbohydrate, fat, protein,timeday: timeDay });
             setName('');
             setMeasure('');
             setAmount('');
@@ -42,6 +57,7 @@ const NewFood = ({ setAddFood, setNewFood }) => {
             setFat('');
             setProtein('');
             setAddFood(false);
+            setTimeDay([]);
         } else {
             setInValidation(true);
         }
@@ -70,6 +86,8 @@ const NewFood = ({ setAddFood, setNewFood }) => {
                             />
                             {inValidation && name === '' && <p className='text-red-500 text-xs'>Name is required.</p>}
                         </div>
+
+
                         <div className='flex flex-col w-full mb-2'>
                             <p className='text-black font-semibold font-quicksand text-sm'>Measure</p>
                             <input
@@ -158,6 +176,55 @@ const NewFood = ({ setAddFood, setNewFood }) => {
                                 onChange={(e)=> handleInputChange(e.target.value, 0, 1000, setProtein)}
                             />
                             {/* Removed: Error message for protein (not required, 0 allowed) */}
+                        </div>
+                        <div className='flex flex-col w-full mb-2'>
+                            <p className='text-black font-semibold font-quicksand text-sm mb-2'>Time of Day</p>
+
+                            <div className='flex flex-wrap gap-3'>
+                                <label className='flex items-center gap-2 px-4 py-2 rounded-md bg-white border border-gray-300 hover:border-healthyGreen cursor-pointer transition-all'>
+                                    <input
+                                        type="checkbox"
+                                        checked={timeDay.includes(1)}
+                                        onChange={() => toggleTimeDay(1)}
+                                        className='w-4 h-4 text-healthyGreen focus:ring-healthyGreen'
+                                    />
+                                    <span className='font-medium text-sm'>Desayuno</span>
+                                </label>
+
+                                <label className='flex items-center gap-2 px-4 py-2 rounded-md bg-white border border-gray-300 hover:border-healthyGreen cursor-pointer transition-all'>
+                                    <input
+                                        type="checkbox"
+                                        checked={timeDay.includes(2)}
+                                        onChange={() => toggleTimeDay(2)}
+                                        className='w-4 h-4 text-healthyGreen focus:ring-healthyGreen'
+                                    />
+                                    <span className='font-medium text-sm'>Almuerzo</span>
+                                </label>
+
+                                <label className='flex items-center gap-2 px-4 py-2 rounded-md bg-white border border-gray-300 hover:border-healthyGreen cursor-pointer transition-all'>
+                                    <input
+                                        type="checkbox"
+                                        checked={timeDay.includes(3)}
+                                        onChange={() => toggleTimeDay(3)}
+                                        className='w-4 h-4 text-healthyGreen focus:ring-healthyGreen'
+                                    />
+                                    <span className='font-medium text-sm'>Snack</span>
+                                </label>
+
+                                <label className='flex items-center gap-2 px-4 py-2 rounded-md bg-white border border-gray-300 hover:border-healthyGreen cursor-pointer transition-all'>
+                                    <input
+                                        type="checkbox"
+                                        checked={timeDay.includes(4)}
+                                        onChange={() => toggleTimeDay(4)}
+                                        className='w-4 h-4 text-healthyGreen focus:ring-healthyGreen'
+                                    />
+                                    <span className='font-medium text-sm'>Cena</span>
+                                </label>
+                            </div>
+
+                            {inValidation && timeDay.length === 0 && (
+                                <p className='text-red-500 text-xs mt-2'>Elige al menos una opción.</p>
+                            )}
                         </div>
                     </div>
                 </div>

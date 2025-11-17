@@ -7,7 +7,7 @@ import NavBar from "../../components/NavBar";
 import Calories from "./components/Calories";
 import FoodConsumed from "./components/FoodConsumed";
 import PopUp from "./components/PopUp";
-import { addGoal,getstreak,addNewFood,getPlatesNotUser, addUserFood, fetchAllFoods, fetchUserFoods, deleteUserFood , fetchFoodByID, editUserFood, getCategories, getDefaultCategories,getProdByID, getProducts,getBarCategory, getUserDrinks,getUserPlates, getDrinkByID, getPlate_ByID, getGroupedDrinkTypes, getPublicPlates, fetchUser, editUserData, } from "../../firebaseService";
+import { addGoal,getstreak,addNewFood,getPlatesNotUser, addUserFood, fetchAllFoods, fetchUserFoods, deleteUserFood , editUserFood, getCategories, getDefaultCategories,getProdByID, getUserDrinks,getUserPlates, getGroupedDrinkTypes, fetchUser, editUserData, } from "../../firebaseService";
 import Filter from "./components/Filter";
 import StreakCounter from "./components/StreakCounter";
 import Loading from "../../components/Loading";
@@ -90,11 +90,13 @@ function Home() {
         user && fetchStreak();
     }, [userFood]);
 
-    const updateUserGoals=async(userEdited)=>{
+    const updateUserGoals = async (userEdited) => {
+        console.log("USER EDITED FROM POPUP → ", userEdited)
         setAskForGoals(false)
         setUser(userEdited)
-        await editUserData(user_id, userEdited)
+        await editUserData(userEdited)
     }
+    
 
 
     useEffect(()=>{
@@ -109,7 +111,7 @@ function Home() {
 
     const getUserData = async()=> {
         try{
-            const userInfo = await fetchUser(user_id)
+            const userInfo = await fetchUser()
             if(userInfo){
                 const { email, ...filteredUserData } = userInfo;
                 if (Object.values(filteredUserData.goals).some(goal => goal === 0)) {
@@ -449,7 +451,10 @@ useEffect(() => {
             {addMeal &&
                 <PopUp user={user}  newFood={newFood} setAddMeal={setAddMeal} foodData={foodData} handleAddMeal={handleAddMeal} setNewFood={setNewFood} setSelection={setSelection} selection={selection} platesData={platesData} drinksData={drinksData} />
             }
-            {askForGoals && <Goals user={user} setUser={setUser} editGoals={updateUserGoals} /> }
+            {askForGoals && user && (
+    <Goals user={user} setUser={setUser} editGoals={updateUserGoals} />
+)}
+
         </div>
         
     );

@@ -104,7 +104,7 @@ function UserProfile() {
 
     const getUser = async () => {
         try {
-            const userData = await fetchUser(user_id);
+            const userData = await fetchUser();
             console.log("User Data-profile ", userData)
             setUser(userData);
             setName(userData.name);
@@ -135,7 +135,7 @@ function UserProfile() {
             achivements: user.achievements,
         };
         try {
-            await editUserData(user_id,data);
+            await editUserData(data);
             console.log('User edited successfully in Firestore');
         } catch (err) {
             console.log('Error editing user: ' + err.message);
@@ -145,7 +145,7 @@ function UserProfile() {
     const editGoals=()=>{
         setOpenGoals(false)
         const updateGoals=async()=>{
-            await editUserData(user_id,user)
+            await editUserData(user)
         }
         updateGoals()
     }

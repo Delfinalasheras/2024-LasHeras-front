@@ -2,10 +2,10 @@ import React, { useEffect, useState } from 'react';
 import InputDrink from './InputDrink';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCaretDown, faPlus } from '@fortawesome/free-solid-svg-icons';
-import { createDrink,createDrinkType } from '../../../firebaseService';
+import { createDrink, createDrinkType } from '../../../firebaseService';
 import DrinkType from './DrinkType';
 
-export const NewDrink = ({ setNewDrink, handleUpdate, categorydrinks, drinktypes,handleDrinkTypeUpdate, setDrinksData }) => {
+export const NewDrink = ({ setNewDrink, handleUpdate, categorydrinks, drinktypes, handleDrinkTypeUpdate, setDrinksData }) => {
     const [name, setName] = useState('');
     const [sugar, setSugar] = useState('');
     const [caffeine, setCaffeine] = useState('');
@@ -15,30 +15,60 @@ export const NewDrink = ({ setNewDrink, handleUpdate, categorydrinks, drinktypes
     const [typeOptions, setTypeOptions] = useState(false);
     const [typePersonalize, setTypePersonalize] = useState('');
     const [typeSelected, setTypeSelected] = useState(null);
-    const [newType, setNewType] = useState([])
+    const [newType, setNewType] = useState([]);  // This can be removed if not used elsewhere
     const [message, setMessage] = useState('');
-    const [type,setTypeId] = useState('');
+    const [type, setTypeId] = useState('');
+    
+    // New: Local state for drink types to enable optimistic updates
+    const [localDrinkTypes, setLocalDrinkTypes] = useState(drinktypes);
+
+    // New: Sync localDrinkTypes with the prop drinktypes whenever it changes
+    useEffect(() => {
+        setLocalDrinkTypes(drinktypes);
+    }, [drinktypes]);
 
     const handleNewType = async () => {
-        const data = {
+        if (!typePersonalize.trim()) {
+            setMessage("Please enter a type name");
+            return;
+        }
+
+        const optimisticType = {
+            id: `temp-${Date.now()}`,  // Temporary ID for optimistic update
             name: typePersonalize,
         };
-    
+
+        // Optimistic update: Add to local state immediately
+        setLocalDrinkTypes(prev => [...prev, optimisticType]);
+        setTypePersonalize('');
+        setTypeOptions(false);  // Close the dropdown
+
         try {
-            // Create new drink type in the backend
+            const data = { name: typePersonalize };
             const newTypeId = await createDrinkType(data);
+            
+            // On success: Update the optimistic entry with the real ID
+            setLocalDrinkTypes(prev =>
+                prev.map(type =>
+                    type.id === optimisticType.id ? { ...type, id: newTypeId } : type
+                )
+            );
             setTypeId(newTypeId);
-            setTypePersonalize('');
-    
-            handleDrinkTypeUpdate()
+            
+            // Call the parent's update function to sync globally
+            handleDrinkTypeUpdate();
         } catch (error) {
             console.log("Error creating new drink type: ", error);
+            setMessage("Failed to add new type. Please try again.");
+            
+            // Revert optimistic update on failure
+            setLocalDrinkTypes(prev =>
+                prev.filter(type => type.id !== optimisticType.id)
+            );
         }
     };
 
-
     useEffect(() => {
-
         setTypeOptions(false);
     }, []);
 
@@ -87,13 +117,12 @@ export const NewDrink = ({ setNewDrink, handleUpdate, categorydrinks, drinktypes
                 setMeasure('');
                 setNewDrink(false);
                 handleUpdate();
-                setDrinksData(prev=>[...prev,data ])
+                setDrinksData(prev => [...prev, data]);
                 console.log('Drink added successfully');
             } catch (error) {
                 console.log('Error adding new drink: ', error);
             }
         }
-    
     };
 
     return (
@@ -126,14 +155,15 @@ export const NewDrink = ({ setNewDrink, handleUpdate, categorydrinks, drinktypes
                         </div>
                         {typeOptions && (
                             <div className='w-11/12 flex flex-col justify-end'>
-                                {drinktypes.map((drinkType) => (
+                                {/* Updated: Use localDrinkTypes instead of drinktypes for optimistic updates */}
+                                {localDrinkTypes.map((drinkType) => (
                                     <DrinkType
                                         key={drinkType.id}
                                         drinkType={drinkType}
                                         setTypeSelected={setTypeSelected}
-                                        setTypeId = {setTypeId}
-                                        setTypeOptions = {setTypeOptions}
-                                        handleDrinkTypeUpdate = {handleDrinkTypeUpdate}
+                                        setTypeId={setTypeId}
+                                        setTypeOptions={setTypeOptions}
+                                        handleDrinkTypeUpdate={handleDrinkTypeUpdate}
                                     />
                                 ))}
                                 <div className='flex w-full justify-between items-center mt-2'>
@@ -166,7 +196,6 @@ export const NewDrink = ({ setNewDrink, handleUpdate, categorydrinks, drinktypes
                         <div className='flex w-1/3 items-baseline justify-end'>
                             <input
                                 type='text'
-
                                 value={measure}
                                 onChange={(e) => setMeasure(e.target.value)}
                                 placeholder='cup'
@@ -174,7 +203,6 @@ export const NewDrink = ({ setNewDrink, handleUpdate, categorydrinks, drinktypes
                             />
                             <p className='text-xs ml-1 w-1/3'>{''}</p>
                         </div>
-                        
                     </div>
                     <InputDrink name='Amount' measure={measure} setValue={setAmount} value={amount} />
                     <InputDrink name='Calories' measure='cal' setValue={setCalories} value={calories} />
@@ -187,5 +215,3 @@ export const NewDrink = ({ setNewDrink, handleUpdate, categorydrinks, drinktypes
         </div>
     );
 };
-
-

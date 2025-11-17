@@ -32,48 +32,59 @@ axios.interceptors.request.use(
 );
 
 
-export const registerUser = async (email, password, name, surname, weight, height, birthDate)=>{
-    try{
-        const userCredential=await createUserWithEmailAndPassword(auth, email, password)
-        await loginUser(email, password)
-        const data= {
-            id_user: userCredential.user.uid,  // ID único del usuario generado por Firebase Auth
+export const registerUser = async (email, password, name, surname, weight, height, birthDate) => {
+    try {
+        // Create the user (this automatically signs them in)
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        console.log("USER INFO LOG IN", email, password, name, surname, weight, height, birthDate)
+        // Prepare data with proper validation for weight and height
+        const parsedWeight = Math.max(0, parseFloat(weight) || 0);  // Ensure >= 0, default to 0 if invalid
+        const parsedHeight = Math.max(0, parseFloat(height) || 0);  // Ensure >= 0, default to 0 if invalid
+        
+        const data = {
             name: name,
             surname: surname,
-            weight: weight ? parseFloat(weight) : 0,
-            height: height ? parseFloat(height) : 0,
+            weight: parsedWeight,
+            height: parsedHeight,
             birthDate: new Date(birthDate),
-            goals:{
-                calories:0,
-                sodium:0,
-                protein:0,
-                carbohydrates:0,
-                fats:0,
-                sugar:0,
-                caffeine:0,
+            goals: {
+                calories: 0,
+                sodium: 0,
+                protein: 0,
+                carbohydrates: 0,
+                fats: 0,
+                sugar: 0,
+                caffeine: 0,
             },
             validation: 0,
             achievements: [],
-            allergies:[]
+            email: email,
+        };
+        console.log("USER INFO LOG IN", data)
+        
+        // Get the ID token from the user
+        const token = await userCredential.user.getIdToken();
+        if (!token) {
+            throw new Error('Token not found');
         }
-        const token = await getIdToken()
-        if( !token){
-            throw new Error ('Token not found')
-        }
-        await axios.post(`${ruta}/user/${userCredential.user.uid}`, data, {
+        
+        // Send to backend
+        await axios.post(`${ruta}/RegisterUser`, data, {
             headers: {
                 Authorization: `Bearer ${token}`
             }
         });
         
-        const user=await fetchUser(userCredential.user.uid)
-        if(user){
-            return userCredential.user.uid
+        // Fetch and return the user
+        const user = await fetchUser();
+        if (user) {
+            return userCredential.user.uid;
         }
-    }catch(error){
-        throw error
+    } catch (error) {
+        throw error;  // Re-throw to let the caller handle it
     }
-}
+};
+
 
 export const loginUser = async (email, password) => {
     try {
@@ -121,7 +132,7 @@ export const getUserUid = async () => {
     });
 };
 
-export const fetchUser=async(user_id)=>{
+export const fetchUser=async()=>{
     try {
         const token = await getIdToken()
         console.log(token)
@@ -145,11 +156,13 @@ export const editUserData=async(data)=>{
     
     try {
         const token = await getIdToken()
+        console.log("INFORMACION PARA ACTUALIZAR",data)
         if( !token){
             throw new Error ('Token not found')
         }
         const response = await axios.put(`${ruta}/update_user/`, data,{
             headers: {
+                "Content-Type": "application/json",
                 Authorization: `Bearer ${token}`
             }
         });
@@ -305,7 +318,8 @@ export const addUserFood = async (user_id,selection, date, amount) => {
           carbohydrates_portion: Number(newFood.carbohydrate),
           sodium_portion: Number(newFood.sodium),
           fats_portion: Number(newFood.fat),
-          protein_portion: Number(newFood.protein)
+          protein_portion: Number(newFood.protein),
+          timeDay: newFood.timeday,
         }),
       });
   
@@ -326,7 +340,9 @@ export const deleteUserFood = async (doc_id) => {
         if( !token){
             throw new Error ('Token not found')
         }
-        await axios.delete(`${ruta}/DeleteMealUser/${doc_id}`); // Adjust this based on your backend response structure
+        await axios.delete(`${ruta}/DeleteMealUser/${doc_id}`,{
+            headers: { Authorization: `Bearer ${token}` }
+        }); // Adjust this based on your backend response structure
     } catch (error) {
         console.error('Error fetching food by ID:', error);
         return null; // Return null or handle the error as needed
@@ -442,7 +458,9 @@ export const updateCategory=async(data,category_id)=>{
 
 export const deleteCategory=async(category_id)=>{
     try {
-        await axios.delete(`${ruta}/DeleteCategory/${category_id}`); 
+        await axios.delete(`${ruta}/DeleteCategory/${category_id}`,{
+            headers: { Authorization: `Bearer ${await getIdToken()}` }
+        }); 
     } catch (error) {
         console.error('Error deleting category by ID:', error);
         return null; 
@@ -508,28 +526,15 @@ export const UpdateTotCal = async (totcal_id, data, date) => {
 };
 
 export const fetchTotCalByDay = async (date) => {
-    const userTotCal = await getTotCalUser(); // Wait for the promise to resolve
-    
-    if (!userTotCal) return []; // Handle if there's no data
+    const isoDate = date.toISOString().split("T")[0];
+    console.log("ISO DATE", isoDate)
 
-    // Filter the food based on the provided date
-    const filteredTotcal = userTotCal.filter(doc => {
-        let ingestedDate;
-        if (doc.day.seconds) {
-            ingestedDate = new Date(doc.day.seconds * 1000); // Convert timestamp to Date
-        } else {
-            ingestedDate = new Date(doc.day); // If it's a string, it will handle conversion
-        }
-
-        return (
-            ingestedDate.getDate() === date.getDate() &&
-            ingestedDate.getMonth() === date.getMonth() &&
-            ingestedDate.getFullYear() === date.getFullYear()
-        );
+    const response = await axios.get(`${ruta}/getTotCalDay/${isoDate}`, {
+        headers: { Authorization: `Bearer ${await getIdToken()}` }
     });
+    console.log("Filtered User cals by date:", response.message);
 
-    console.log("Filtered User cals by date:", filteredTotcal);
-    return filteredTotcal;
+    return await response.data.message;
 };
 
 export const getCategoriesAndDefaults = async () => {
@@ -723,7 +728,8 @@ export const createplate = async (selection) => {
                 "fats_portion": selection?.fats_portion || 0,
                 "image": selection.image,
                 "public": selection.public,
-                "verified": selection.verified
+                "verified": selection.verified,
+                "timeDay": selection.timeday,
             }),
             
         });
@@ -771,7 +777,9 @@ export const updatePlate=async(data,plate_id)=>{
 }
 export const deleteplate=async(plate_id)=>{
     try {
-        await axios.delete(`${ruta}/DeletePlate/${plate_id}`); 
+        await axios.delete(`${ruta}/DeletePlate/${plate_id}`,{
+            headers: { Authorization: `Bearer ${await getIdToken()}` } 
+        }); 
     } catch (error) {
         console.error('Error deleting plate by ID:', error);
         return null; 
@@ -794,14 +802,15 @@ export const fechDrinkTypes = async () =>{
 }
 export const createDrinkType = async (selection) => {
     try {
+
         const response = await fetch(`${ruta}/drinkType_log`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
+                "authorization": `Bearer ${await getIdToken()}`
             },
             body: JSON.stringify( {
                 "name": selection.name,
-                "id_user": auth.currentUser.uid,
             }),
             
         });
@@ -913,7 +922,7 @@ export const getPlate_ByID = async (plate_id) => {
 }
 
 export const getGroupedDrinkTypes = async () => {
-    const response = await axios.get(`${ruta}/getUserGroupDrinkType/${auth.currentUser.uid}`);
+    const response = await axios.get(`${ruta}/getUserGroupDrinkType/`);
     const drink=response.data.Drinks
     return drink
 
@@ -947,11 +956,14 @@ export const updateComments = async (doc_id, data) => {
 };
 export const createReview = async (selection) => {
     try {
+        const token = await getIdToken();
+        if (!token) throw new Error('Token not found');
         console.log(selection)
         const response = await fetch(`${ruta}/newReview`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
+                "authorization": `Bearer ${token}`
             },
             body: JSON.stringify( {
                 "plate_Id": selection.id_plate,
@@ -978,14 +990,12 @@ export const createReview = async (selection) => {
 };
 
 export const getstreak = async () => {
-    const user_id  = auth.currentUser.uid
-    const response = await axios.get(`${ruta}/Streak/${user_id}`,)
+    const response = await axios.get(`${ruta}/Streak/`,)
     const streak = response.data.message
     return streak
 }
 export const getUserNotification = async () => {
-    const user_id  = auth.currentUser.uid
-    const response = await axios.get(`${ruta}/getUserNotifications/${user_id}`,)
+    const response = await axios.get(`${ruta}/getUserNotifications/`,)
     const notifications = response.data.notifications
     return notifications
 }
@@ -1004,8 +1014,7 @@ export const markNotificationAsRead = async (doc_id) => {
     }
 };
 export const getPlatesNotUser = async () => {
-    const user_id  = auth.currentUser.uid
-    const response = await axios.get(`${ruta}/PublicplatesNotFromUser/${user_id}`,)
+    const response = await axios.get(`${ruta}/PublicplatesNotFromUser/`,)
     const plates = response.data.Plates
     return plates
 }
@@ -1023,4 +1032,23 @@ export const addGoal = async (goal_id) => {
     
     return response;
     }catch (error) {return null;}
+}
+
+///FINAL
+export const getRecomendations = async (timeDay) => {
+    try {
+        const token = await getIdToken()
+        console.log("TIME OF DAY",timeDay)
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        const response=await axios.get(`${ruta}/getRecomendations/${timeDay}`, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    
+    return response.data;
+    }catch (error) {
+        console.error('Error fetching recomendations :', error);
+        return null; // Return null or handle the error as needed
+    }
 }

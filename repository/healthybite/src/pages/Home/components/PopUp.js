@@ -5,7 +5,7 @@ import FoodItem from './FoodItem';
 import Search from './Search';
 import messidepaul from '../../../assets/messidepaul.png'
 import NewFood from './NewFood';
-import { getProducts } from '../../../firebaseService';
+import { getProducts, getRecomendations } from '../../../firebaseService';
 import Menu from './Menu';
 import emptyPlate from '../../../assets/emptyPlate.png'
 import emptyGlass from '../../../assets/emptyGlass.png'
@@ -20,6 +20,9 @@ const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, select
     const [message, setMessage] = useState(false);
     const [show, setShow] =useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [recommendations, setRecommendations] = useState({});
+    const [recsFetched, setRecsFetched] = useState(false);
+
     const fetchMenu=async()=>{
         try{
             const data= await getProducts()
@@ -30,6 +33,24 @@ const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, select
             console.log("Error fetching products from Messi and DePaul APP")
         }
     }
+
+    const fetchRecommendations = async () => {
+        setRecsFetched(false);
+        console.log("ENTRO ACA")
+        const recs = {};
+        for (let i = 1; i <= 4; i++) {
+            try {
+                recs[i] = await getRecomendations(i);
+                
+            } catch (error) {
+                console.log(`Error fetching recommendations for time ${i}`);
+                recs[i] = [];
+            }
+        }
+        console.log("LISTA RECO",recs)
+        setRecommendations(recs);
+        setRecsFetched(true);
+    };
 
     const handleOpenMenu=()=>{
         if (openMenu){
@@ -64,12 +85,17 @@ const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, select
         }
     }, [newFood]);
 
-
     useEffect(()=>{
         show === 1 && searchFood!==foodData && setSearchFood(foodData)
         show === 2 && setSearchFood(platesData)
         show === 3 && setSearchFood(drinksData)
     },[show])
+
+    useEffect(() => {
+        if (show === 4 && !recsFetched) {
+            fetchRecommendations();
+        }
+    }, [show, recsFetched]);
 
     return (
         <div className="w-full h-screen absolute top-0 z-50 flex justify-center items-center bg-black/30">
@@ -105,13 +131,25 @@ const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, select
                             </div>
                         </div>
                         <div className='flex mt-2 justify-around w-full items-center  font-quicksand font-semibold text-sm text-healthyGray'> 
-                            <button onClick={()=>setShow(1)} className={`${show===1 ? 'text-healthyDarkGray1  bg-white/40 rounded-t-md font-bold' : 'text-healthyGray1  '} w-1/3 py-2`}>Food</button>
-                            <button onClick={()=>setShow(2)} className={`${show===2 ? 'text-healthyDarkGray1  bg-white/40 rounded-t-md font-bold' : 'text-healthyGray1  '} w-1/3 py-2`}>Plate</button>
-                            <button onClick={()=>setShow(3)} className={`${show===3 ? 'text-healthyDarkGray1  bg-white/40 rounded-t-md font-bold' : 'text-healthyGray1  '} w-1/3 py-2`}>Drinks</button>
+                            <button onClick={()=>setShow(1)} className={`${show===1 ? 'text-healthyDarkGray1  bg-white/40 rounded-t-md font-bold' : 'text-healthyGray1  '} w-1/4 py-2`}>Food</button>
+                            <button onClick={()=>setShow(2)} className={`${show===2 ? 'text-healthyDarkGray1  bg-white/40 rounded-t-md font-bold' : 'text-healthyGray1  '} w-1/4 py-2`}>Plate</button>
+                            <button onClick={()=>setShow(3)} className={`${show===3 ? 'text-healthyDarkGray1  bg-white/40 rounded-t-md font-bold' : 'text-healthyGray1  '} w-1/4 py-2`}>Drinks</button>
+                            <button onClick={()=>setShow(4)} className={`${show===4 ? 'text-healthyDarkGray1  bg-white/40 rounded-t-md font-bold' : 'text-healthyGray1  '} w-1/4 py-2`}>Recommendations</button>
                         </div>
-                        {!addFood && ( ((show===1 || show===3) && searchFood?.length > 0) || (show===2 && (searchFood?.mines?.length>0 || searchFood?.others?.length>0) ) ? (
+                        {!addFood && ( ((show===1 || show===3) && searchFood?.length > 0) || (show===2 && (searchFood?.mines?.length>0 || searchFood?.others?.length>0) ) || (show===4 && recsFetched && Object.values(recommendations).some(arr => arr.length > 0)) ? (
                             <div className="bg-white/40 p-2 rounded-b-lg w-full max-h-[250px] md:max-h-[500px] lg:max-h-[330px]  overflow-y-auto">
-                                {show===2 && searchFood.mines && searchFood.others ?
+                                {show===4 ? (
+                                    <div className='flex flex-col w-full '>
+                                        {['Breakfast', 'Lunch', 'Snack', 'Dinner'].map((time, i) => (
+                                            <div key={i}>
+                                                <p className='text-xs font-bold text-healthyGray1 font-quicksand pb-1 border-b-2 border-healthyGray1 mb-1 w-full text-left'>{time}</p>
+                                                {recommendations[i+1]?.length > 0 ? recommendations[i+1].map((food, index) => (
+                                                    <FoodItem key={`${i}-${index}`} food={food} setSelection={setSelection} />
+                                                )) : <p className='text-xs text-healthyGray1'>No recommendations for {time.toLowerCase()}</p>}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : show===2 && searchFood.mines && searchFood.others ?
                                 <div className='flex flex-col w-full '>
                                     <p className='text-xs font-bold text-healthyGray1 font-quicksand  pb-1 border-b-2 border-healthyGray1 mb-1 w-full text-left'>My plates</p>
                                     {show===2 && searchFood.mines.map((food, index) => (
@@ -129,7 +167,7 @@ const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, select
                         ) :
                         <div className='w-full h-[350px] md:h-[500px] lg:h-[330px] bg-white/40  overflow-y-auto flex justify-center flex-col items-center'>
                             <img src={show===3 ? emptyGlass : emptyPlate} className='w-1/3 md:w-1/5 opacity-30 ' alt={show===3 ? 'Empty glass' :'Empty plate'} />
-                            <p className='font-quicksand font-bold text-sm mt-3 text-healthyGray1 text-center w-3/4'>There are no {show==1 ? 'food' : show===2 ? 'plates' : 'drinks'}&nbsp;created</p>
+                            <p className='font-quicksand font-bold text-sm mt-3 text-healthyGray1 text-center w-3/4'>There are no {show==1 ? 'food' : show===2 ? 'plates' : show===3 ? 'drinks' : 'recommendations'}&nbsp;created</p>
                         </div>)}
                     </>
                 )}

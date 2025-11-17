@@ -6,7 +6,7 @@ import { createUserWithEmailAndPassword,signInWithEmailAndPassword,sendPasswordR
 import { collection, addDoc } from 'firebase/firestore';
 import { auth,firestore } from '../../firebaseConfig';
 import {handleInputChange} from '../inputValidation';
-import { fetchUser, forgotPassword, loginUser, registerUser } from "../../firebaseService";
+import { forgotPassword, loginUser, registerUser } from "../../firebaseService";
 import { Navigate, useNavigate } from "react-router-dom";
 import { UserContext } from "../../App";
 
@@ -19,9 +19,9 @@ function Login() {
     const [password, setPassword] = useState('');
     const [confirmPw, setConfirmPw] = useState('');
     const [surname, setSurname] = useState('');
-    const [weight, setWeight] = useState();
+    const [weight, setWeight] = useState('');
     const [birthDate, setBirthDate] = useState('');
-    const [height, setHeight] = useState();
+    const [height, setHeight] = useState('');
     const [name, setName] = useState('');
     const [infoOk, setInfoOk]=useState(false);
     const [forgot, setForgot]=useState(false);
@@ -30,13 +30,23 @@ function Login() {
     const navigate=useNavigate()
 
     const handleWeightChange = (e) => {
-        const value = parseFloat(e.target.value);
-        setWeight(value >= 0 ? value : null);
+        const value = e.target.value;
+        if (value === '') {
+            setWeight('');
+        } else {
+            const numValue = parseFloat(value);
+            setWeight(isNaN(numValue) ? '' : Math.max(0, numValue));
+        }
     };
     
     const handleHeightChange = (e) => {
-        const value = parseFloat(e.target.value);
-        setHeight(value >= 0 ? value : null);
+        const value = e.target.value;
+        if (value === '') {
+            setHeight('');
+        } else {
+            const numValue = parseFloat(value);
+            setHeight(isNaN(numValue) ? '' : Math.max(0, numValue));
+        }
     };
     
     
@@ -96,6 +106,18 @@ function Login() {
             return false
         }
 
+        // Check if weight is empty or not positive
+        if (!weight || parseFloat(weight) <= 0) {
+            setMessage("Weight must be a positive number");
+            return false;
+        }
+
+        // Check if height is empty or not positive
+        if (!height || parseFloat(height) <= 0) {
+            setMessage("Height must be a positive number");
+            return false;
+        }
+
         return true
 
     }
@@ -107,7 +129,7 @@ function Login() {
             try {
                 
                 setMessage('Creating new user...')
-                const user_id = await registerUser(email, password, name, surname, weight, height, birthDate)
+                const user_id = await registerUser(email, password, name, surname, parseFloat(weight), parseFloat(height), birthDate)
                 user_id && navigate("/home")
             } catch (error) {
                 switch (error.code) {
@@ -195,12 +217,12 @@ function Login() {
                                     <Input required={inValidation && surname===''} label="Surname" inputType="text" inputValue={surname} placeholder="Doe" onChange={(e)=>setSurname(e.target.value)} />
                                     <Input required={inValidation && email===''} label="Email" inputType="email" inputValue={email} placeholder="jane@example.com" onChange={(e)=>setEmail(e.target.value)} />
                                     <Input required={inValidation && birthDate===''} max={new Date().toISOString().split('T')[0]} label="Date of birth" inputType="date" inputValue={birthDate} placeholder="DD-MM-YYYY" onChange={(e)=>setBirthDate(e.target.value)} />
-                                    <Input required={inValidation && weight <= 0} min="0" max="500"  label="Weight" inputType="number" inputValue={weight} placeholder="e.g., 70 kg" onChange={handleWeightChange}/>
-                                    {inValidation && weight < 0 && <p className='text-red-500 text-xs'>weight must be a positive number.</p>}
-                                    {inValidation && weight >= 500 && <p className='text-red-500 text-xs'>weight must be under 600kg.</p>}
-                                    <Input required={inValidation && height <= 0} label="Height" min="0" max="500"   inputType="number" inputValue={height} placeholder="e.g., 170 cm" onChange={handleHeightChange}/>
-                                    {inValidation && height < 0 && <p className='text-red-500 text-xs'>height must be a positive number.</p>}
-                                    {inValidation && height >= 500 && <p className='text-red-500 text-xs'>height must under 600cm.</p>}
+                                    <Input required={inValidation && (!weight || parseFloat(weight) <= 0)} min="0" max="500"  label="Weight" inputType="number" inputValue={weight} placeholder="e.g., 70 kg" onChange={handleWeightChange}/>
+                                    {inValidation && (!weight || parseFloat(weight) <= 0) && <p className='text-red-500 text-xs'>Weight must be a positive number.</p>}
+                                    {inValidation && parseFloat(weight) >= 500 && <p className='text-red-500 text-xs'>Weight must be under 500kg.</p>}
+                                    <Input required={inValidation && (!height || parseFloat(height) <= 0)} label="Height" min="0" max="500"   inputType="number" inputValue={height} placeholder="e.g., 170 cm" onChange={handleHeightChange}/>
+                                    {inValidation && (!height || parseFloat(height) <= 0) && <p className='text-red-500 text-xs'>Height must be a positive number.</p>}
+                                    {inValidation && parseFloat(height) >= 500 && <p className='text-red-500 text-xs'>Height must be under 500cm.</p>}
                                     <Input required={inValidation && password===''} label="Password" inputType="password" inputValue={password} placeholder="Password" onChange={(e) => setPassword(e.target.value)} />
                                     <Input required={inValidation && confirmPw===''} label="Confirm password" inputType="password" inputValue={confirmPw} placeholder="Password" onChange={(e) => setConfirmPw(e.target.value)} />
                                 </div>
@@ -253,3 +275,4 @@ function Login() {
 }
 
 export default Login;
+
