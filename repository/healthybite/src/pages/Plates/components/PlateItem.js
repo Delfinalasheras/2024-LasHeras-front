@@ -70,36 +70,35 @@ export const PlateItem = ({ plateDetail, foodData, handleupdatePlates,setSuccess
             console.error("Error creating review:", error);
         }
     };
-
-    const updateData = async () => {
-        const updatedPlate = {
-            ...plate,
-            ingredients: foodPlate.map((item) => ({
-                ingredientId: item.id,
-                quantity: Number(item.amount) || 0
-            })),
-            calories_portion: foodPlate.reduce(
-                (acc, item) => acc + ((Number(item.calories_portion) || 0) * (Number(item.amount) || 0)),
-                0
-            ),
-            sodium_portion: foodPlate.reduce(
-                (acc, item) => acc + ((Number(item.sodium_portion) || 0) * (Number(item.amount) || 0)),
-                0
-            ),
-            carbohydrates_portion: foodPlate.reduce(
-                (acc, item) => acc + ((Number(item.carbohydrates_portion) || 0) * (Number(item.amount) || 0)),
-                0
-            ),
-            protein_portion: foodPlate.reduce(
-                (acc, item) => acc + ((Number(item.protein_portion) || 0) * (Number(item.amount) || 0)),
-                0
-            ),
-            fats_portion: foodPlate.reduce(
-                (acc, item) => acc + ((Number(item.fats_portion) || 0) * (Number(item.amount) || 0)),
-                0
-            ),
-            public: publicPlate
-        };
+        const updateData = async () => {
+            const updatedPlate = {
+                ...plate,
+                ingredients: foodPlate.map((item) => ({
+                    ingredientId: item.id,
+                    quantity: Number(item.amount) || 0
+                })),
+                calories_portion: foodPlate.reduce(
+                    (acc, item) => acc + ((Number(item.calories_portion) || 0) * (Number(item.amount) || 0) / (Number(item.measure_portion) || 1)),
+                    0
+                ),
+                sodium_portion: foodPlate.reduce(
+                    (acc, item) => acc + ((Number(item.sodium_portion) || 0) * (Number(item.amount) || 0) / (Number(item.measure_portion) || 1)),
+                    0
+                ),
+                carbohydrates_portion: foodPlate.reduce(
+                    (acc, item) => acc + ((Number(item.carbohydrates_portion) || 0) * (Number(item.amount) || 0) / (Number(item.measure_portion) || 1)),
+                    0
+                ),
+                protein_portion: foodPlate.reduce(
+                    (acc, item) => acc + ((Number(item.protein_portion) || 0) * (Number(item.amount) || 0) / (Number(item.measure_portion) || 1)),
+                    0
+                ),
+                fats_portion: foodPlate.reduce(
+                    (acc, item) => acc + ((Number(item.fats_portion) || 0) * (Number(item.amount) || 0) / (Number(item.measure_portion) || 1)),
+                    0
+                ),
+                public: publicPlate
+            };
 
         try {
             await updatePlate(updatedPlate, plate.id);

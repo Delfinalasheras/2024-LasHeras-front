@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faCheck, faXmark, faCircleXmark, faAngleRight } from '@fortawesome/free-solid-svg-icons'; 
 import FoodItem from './FoodItem';
+import RecommendationItem from './RecomendationItem';
 import Search from './Search';
 import messidepaul from '../../../assets/messidepaul.png'
 import NewFood from './NewFood';
@@ -21,7 +22,12 @@ const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, select
     const [show, setShow] =useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [recommendations, setRecommendations] = useState({});
-    const [recsFetched, setRecsFetched] = useState(false);
+    const [recsLoading, setRecsLoading] = useState(false);
+    
+    // Cache and invalidation tracking
+    const recommendationsCache = useRef(null);
+    const lastFetchTime = useRef(null);
+    const needsRefresh = useRef(false);
 
     const fetchMenu=async()=>{
         try{
@@ -34,22 +40,42 @@ const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, select
         }
     }
 
-    const fetchRecommendations = async () => {
-        setRecsFetched(false);
-        console.log("ENTRO ACA")
-        const recs = {};
-        for (let i = 1; i <= 4; i++) {
-            try {
-                recs[i] = await getRecomendations(i);
-                
-            } catch (error) {
-                console.log(`Error fetching recommendations for time ${i}`);
-                recs[i] = [];
-            }
+    const fetchRecommendations = async (forceRefresh = false) => {
+        // Use cache if available and not forcing refresh
+        if (!forceRefresh && recommendationsCache.current && !needsRefresh.current) {
+            setRecommendations(recommendationsCache.current);
+            return;
         }
-        console.log("LISTA RECO",recs)
-        setRecommendations(recs);
-        setRecsFetched(true);
+
+        setRecsLoading(true);
+        const recs = {};
+        
+        try {
+            // Fetch all recommendations in parallel instead of sequentially
+            const promises = [1, 2, 3, 4].map(i => 
+                getRecomendations(i).catch(error => {
+                    console.log(`Error fetching recommendations for time ${i}`);
+                    return [];
+                })
+            );
+            
+            const results = await Promise.all(promises);
+            results.forEach((result, index) => {
+                recs[index + 1] = result;
+            });
+            
+            // Update cache
+            recommendationsCache.current = recs;
+            lastFetchTime.current = Date.now();
+            needsRefresh.current = false;
+            
+            setRecommendations(recs);
+        } catch (error) {
+            console.log('Error fetching recommendations:', error);
+            setRecommendations({});
+        } finally {
+            setRecsLoading(false);
+        }
     };
 
     const handleOpenMenu=()=>{
@@ -60,17 +86,19 @@ const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, select
             fetchMenu()
         }
     }
+
     const handleSingleClickAddMeal = async () => {
-        if (isSubmitting) return; // Prevent double submission
+        if (isSubmitting) return;
         
         setIsSubmitting(true);
         
         try {
-            await handleAddMeal(); // This will now be fast due to optimistic updates
-            // PopUp will close automatically from handleAddMeal in Home.js
+            await handleAddMeal();
+            // Mark recommendations as needing refresh after meal is added
+            needsRefresh.current = true;
         } catch (error) {
             console.error('Error in handleSingleClickAddMeal:', error);
-            setIsSubmitting(false); // Re-enable only on error
+            setIsSubmitting(false);
         }
     };
 
@@ -92,10 +120,11 @@ const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, select
     },[show])
 
     useEffect(() => {
-        if (show === 4 && !recsFetched) {
+        // Only fetch recommendations when switching to tab 4
+        if (show === 4) {
             fetchRecommendations();
         }
-    }, [show, recsFetched]);
+    }, [show]);
 
     return (
         <div className="w-full h-screen absolute top-0 z-50 flex justify-center items-center bg-black/30">
@@ -136,16 +165,36 @@ const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, select
                             <button onClick={()=>setShow(3)} className={`${show===3 ? 'text-healthyDarkGray1  bg-white/40 rounded-t-md font-bold' : 'text-healthyGray1  '} w-1/4 py-2`}>Drinks</button>
                             <button onClick={()=>setShow(4)} className={`${show===4 ? 'text-healthyDarkGray1  bg-white/40 rounded-t-md font-bold' : 'text-healthyGray1  '} w-1/4 py-2`}>Recommendations</button>
                         </div>
-                        {!addFood && ( ((show===1 || show===3) && searchFood?.length > 0) || (show===2 && (searchFood?.mines?.length>0 || searchFood?.others?.length>0) ) || (show===4 && recsFetched && Object.values(recommendations).some(arr => arr.length > 0)) ? (
+                        
+                        {/* Loading state for recommendations */}
+                        {show === 4 && recsLoading ? (
+                            <div className='w-full h-[350px] md:h-[500px] lg:h-[330px] bg-white/40 overflow-y-auto flex justify-center flex-col items-center'>
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-healthyOrange"></div>
+                                <p className='font-quicksand font-bold text-sm mt-4 text-healthyGray1'>Loading recommendations...</p>
+                            </div>
+                        ) : !addFood && ( ((show===1 || show===3) && searchFood?.length > 0) || (show===2 && (searchFood?.mines?.length>0 || searchFood?.others?.length>0) ) || (show===4 && Object.values(recommendations).some(arr => arr.length > 0)) ? (
                             <div className="bg-white/40 p-2 rounded-b-lg w-full max-h-[250px] md:max-h-[500px] lg:max-h-[330px]  overflow-y-auto">
                                 {show===4 ? (
-                                    <div className='flex flex-col w-full '>
+                                    <div className='flex flex-col w-full'>
+                                        {needsRefresh.current && (
+                                            <div className="bg-healthyOrange/20 border border-healthyOrange rounded-lg p-2 mb-2 flex items-center justify-between">
+                                                <p className='text-xs text-healthyDarkOrange font-quicksand font-semibold'>
+                                                    Recommendations may be outdated
+                                                </p>
+                                                <button 
+                                                    onClick={() => fetchRecommendations(true)}
+                                                    className='text-xs bg-healthyOrange text-white px-2 py-1 rounded font-quicksand font-bold hover:bg-healthyDarkOrange'
+                                                >
+                                                    Refresh
+                                                </button>
+                                            </div>
+                                        )}
                                         {['Breakfast', 'Lunch', 'Snack', 'Dinner'].map((time, i) => (
                                             <div key={i}>
                                                 <p className='text-xs font-bold text-healthyGray1 font-quicksand pb-1 border-b-2 border-healthyGray1 mb-1 w-full text-left'>{time}</p>
                                                 {recommendations[i+1]?.length > 0 ? recommendations[i+1].map((food, index) => (
-                                                    <FoodItem key={`${i}-${index}`} food={food} setSelection={setSelection} />
-                                                )) : <p className='text-xs text-healthyGray1'>No recommendations for {time.toLowerCase()}</p>}
+                                                    <RecommendationItem key={`${i}-${index}`} food={food} setSelection={setSelection} />
+                                                )) : <p className='text-xs text-healthyGray1 mb-2'>No recommendations for {time.toLowerCase()}</p>}
                                             </div>
                                         ))}
                                     </div>

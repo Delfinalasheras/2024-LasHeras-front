@@ -767,7 +767,7 @@ export const getUserPlates = async () => {
 };
 export const updatePlate=async(data,plate_id)=>{
     try{
-        console.log("PLATO",data)
+        console.log("PLATO ACTUALIZAR",data)
         const response = await axios.put(`${ruta}/UpdatePlate/${plate_id}`,{...data,id_User: auth.currentUser.uid });
         return response.data
     }catch(error){
@@ -1049,6 +1049,23 @@ export const getRecomendations = async (timeDay) => {
     return response.data;
     }catch (error) {
         console.error('Error fetching recomendations :', error);
+        return null; // Return null or handle the error as needed
+    }
+}
+
+export const getDailyMenu = async () => {
+    try {
+        const token = await getIdToken()
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        const response=await axios.get(`${ruta}/buildDailyMenu/`, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    
+    return response.data;
+    }catch (error) {
+        console.error('Error fetching daily menu :', error);
         return null; // Return null or handle the error as needed
     }
 }

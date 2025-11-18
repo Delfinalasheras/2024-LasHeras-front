@@ -1,13 +1,14 @@
 import React, { useContext, useEffect, useState } from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faAngleLeft, faAngleRight, faPlus } from '@fortawesome/free-solid-svg-icons'; 
+import { faAngleLeft, faAngleRight, faPlus, faUtensils } from '@fortawesome/free-solid-svg-icons'; 
 import bgImage from '../../assets/imgHome.jpg'
 import Calendar from "../../components/Calendar";
 import NavBar from "../../components/NavBar";
 import Calories from "./components/Calories";
 import FoodConsumed from "./components/FoodConsumed";
 import PopUp from "./components/PopUp";
-import { addGoal,getstreak,addNewFood,getPlatesNotUser, addUserFood, fetchAllFoods, fetchUserFoods, deleteUserFood , editUserFood, getCategories, getDefaultCategories,getProdByID, getUserDrinks,getUserPlates, getGroupedDrinkTypes, fetchUser, editUserData, } from "../../firebaseService";
+import DailyMenu from "./components/DailyMenu"; // Import the new component
+import { addGoal,getstreak,addNewFood,getPlatesNotUser, addUserFood, fetchAllFoods, fetchUserFoods, deleteUserFood , editUserFood, getCategories, getDefaultCategories,getProdByID, getUserDrinks,getUserPlates, getGroupedDrinkTypes, fetchUser, editUserData, getDailyMenu } from "../../firebaseService";
 import Filter from "./components/Filter";
 import StreakCounter from "./components/StreakCounter";
 import Loading from "../../components/Loading";
@@ -19,10 +20,10 @@ import { UserContext } from "../../App";
 
 function Home() {
     const {user_id} = useContext(UserContext);
-    const [foodData, setFoodData] = useState([]); // datos de tabla Food
-    const [platesData, setPlatesData] = useState([]); // datos de tabla Plates
-    const [drinksData, setDrinksData] = useState([]); // datos de tabla Drinks
-    const [userFood, setUserFood] = useState([]); // datos de tabla UserFood
+    const [foodData, setFoodData] = useState([]); 
+    const [platesData, setPlatesData] = useState([]); 
+    const [drinksData, setDrinksData] = useState([]); 
+    const [userFood, setUserFood] = useState([]); 
     const [date, setDate] = useState(new Date());
     const [amount, setAmount] = useState();
     const [selection, setSelection] = useState();
@@ -38,6 +39,25 @@ function Home() {
     const [goalConsumed, setGoalConsumed]=useState(0)
     const [streak, setStreak] = useState(0);
     const [askForGoals, setAskForGoals]=useState(false)
+    const [dailyMenu, setDailyMenu] = useState(null); // New state for daily menu
+    const [showDailyMenu, setShowDailyMenu] = useState(false); // State to control popup visibility
+
+    // Fetch daily menu
+    useEffect(() => {
+        const fetchDailyMenuData = async () => {
+            if (user_id) {
+                try {
+                    const menuData = await getDailyMenu(user_id);
+                    setDailyMenu(menuData);
+                } catch (error) {
+                    console.error("Error fetching daily menu:", error);
+                }
+            }
+        };
+
+        fetchDailyMenuData();
+    }, [user_id, date]); // Refetch when user_id or date changes
+
 
     useEffect(()=>{
         let value=0
@@ -229,73 +249,83 @@ function Home() {
             console.log('Error al obtener las categorias: ' , err);
         }
     };
-// Key changes for Home.js - Replace handleAddMeal function
 
-const handleAddMeal = async () => {
-    try {
-        const tempId = `temp_${Date.now()}`;
-        
-        const now = new Date();
-        const currentDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+    const handleAddMeal = async () => {
+        try {
+            const tempId = `temp_${Date.now()}`;
+            
+            // Use the selected date from the calendar, but set the time to now
+            const selectedDate = new Date(date);  // 'date' is the selected calendar date
+            const now = new Date();
+            selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+            
+            // Adjust for timezone (same as your original logic)
+            const dateTimeForIngestion = new Date(selectedDate.getTime() - selectedDate.getTimezoneOffset() * 60000);
+            
+            let foodDetails = foodData?.find(f => f.id === selection.id_food) || 
+                             platesData?.mines?.find(p => p.id === selection.id_food) ||
+                             platesData?.others?.find(p => p.id === selection.id_food) ||
+                             drinksData?.find(d => d.id === selection.id_food);
+    
+            const newMeal = {
+                id: tempId,
+                id_Food: selection.id_food,
+                amount_eaten: selection.amount,
+                date_ingested: dateTimeForIngestion,  // Now uses the selected date + current time
+                name: selection.name,
+                measure: selection.measure || foodDetails?.measure || 'plate',
+                measure_portion: foodDetails?.measure_portion || 1,
+                calories_portion: foodDetails?.calories_portion || Math.round(foodDetails?.calories || 0),
+                carbohydrates_portion: selection.carbohydrates_portion || foodDetails?.carbohydrates_portion || 0,
+                sodium_portion: selection.sodium_portion || foodDetails?.sodium_portion || 0,
+                fats_portion: selection.fats_portion || foodDetails?.fats_portion || 0,
+                protein_portion: selection.protein_portion || foodDetails?.protein_portion || 0,
+                caffeine_portion: foodDetails?.caffeine_portion || 0,
+                sugar_portion: foodDetails?.sugar_portion || 0,
+                public: foodDetails?.public || false,
+                verified: foodDetails?.verified || false
+            };
+    
+            // Update local state immediately
+            setUserFood(prev => [...prev, newMeal]);
+            setFilteredFood(prev => [...prev, newMeal]);
+            
+            // Reset form state
+            setAmount(null);
+            setSelection(null);
+            setAddMeal(false);
+    
+            // Sync with Firestore (pass the adjusted date)
+            const realId = await addUserFood(user_id, selection, dateTimeForIngestion, selection.amount);
+            
+            // Update the temp ID with the real one
+            setUserFood(prev => prev.map(food => 
+                food.id === tempId ? { ...food, id: realId } : food
+            ));
+            setFilteredFood(prev => prev.map(food => 
+                food.id === tempId ? { ...food, id: realId } : food
+            ));
+            
+            console.log('Meal synced with Firestore successfully');
+            
+        } catch (error) {
+            console.error('Error adding meal:', error);
+            
+            // Rollback on error
+            setUserFood(prev => prev.filter(food => !food.id.toString().startsWith('temp_')));
+            setFilteredFood(prev => prev.filter(food => !food.id.toString().startsWith('temp_')));
+    
+            alert('Failed to add meal. Please try again.');
+        }
+    };
+    
 
-        
-        let foodDetails = foodData?.find(f => f.id === selection.id_food) || 
-                         platesData?.mines?.find(p => p.id === selection.id_food) ||
-                         platesData?.others?.find(p => p.id === selection.id_food) ||
-                         drinksData?.find(d => d.id === selection.id_food);
+// Handler for adding meal from daily menu
+const handleAddMealFromMenu = (mealData) => {
+    setSelection(mealData);
+    handleAddMeal();
+};
 
-        const newMeal = {
-            id: tempId,
-            id_Food: selection.id_food,
-            amount_eaten: selection.amount,
-            date_ingested: currentDateTime, 
-            name: selection.name,
-            measure: selection.measure || foodDetails?.measure || 'plate',
-            measure_portion: foodDetails?.measure_portion || 1,
-            calories_portion: foodDetails?.calories_portion || Math.round(foodDetails?.calories || 0),
-            carbohydrates_portion: selection.carbohydrates_portion || foodDetails?.carbohydrates_portion || 0,
-            sodium_portion: selection.sodium_portion || foodDetails?.sodium_portion || 0,
-            fats_portion: selection.fats_portion || foodDetails?.fats_portion || 0,
-            protein_portion: selection.protein_portion || foodDetails?.protein_portion || 0,
-            caffeine_portion: foodDetails?.caffeine_portion || 0,
-            sugar_portion: foodDetails?.sugar_portion || 0,
-            public: foodDetails?.public || false,
-            verified: foodDetails?.verified || false
-        };
-
-
-        setUserFood(prev => [...prev, newMeal]);
-        setFilteredFood(prev => [...prev, newMeal]);
-        
-   
-        setAmount(null);
-        setSelection(null);
-        setAddMeal(false);
-
-        const realId = await addUserFood(user_id, selection, currentDateTime, selection.amount);
-        
-
-        setUserFood(prev => prev.map(food => 
-            food.id === tempId ? { ...food, id: realId } : food
-        ));
-        setFilteredFood(prev => prev.map(food => 
-            food.id === tempId ? { ...food, id: realId } : food
-        ));
-        
-        console.log('Meal synced with Firestore successfully');
-        
-    } catch (error) {
-        console.error('Error adding meal:', error);
-        
-
-        setUserFood(prev => prev.filter(food => !food.id.toString().startsWith('temp_')));
-        setFilteredFood(prev => prev.filter(food => !food.id.toString().startsWith('temp_')));
-
-        alert('Failed to add meal. Please try again.');
-    }
-}
-
-// Also update handleDeleteMeal to be more optimistic
 const handleDeleteMeal = async (idDoc_user_food) => {
     try {
 
@@ -312,7 +342,6 @@ const handleDeleteMeal = async (idDoc_user_food) => {
     }
 };
 
-// Update handleEditFoodConsumed to be more optimistic
 const handleEditFoodConsumed = async (idDoc_user_food, data) => {
     try {
 
@@ -427,7 +456,7 @@ useEffect(() => {
                                 <FoodConsumed
                                     key={usfood.id}
                                     usfood={usfood}
-                                    handleDeleteMeal={handleDeleteMeal} // Pass the delete function here
+                                    handleDeleteMeal={handleDeleteMeal}
                                     handleEditFoodConsumed={handleEditFoodConsumed}
                                     drink={drinksData.find(item=>item.id===usfood.id_Food)}
                                 />
@@ -435,11 +464,40 @@ useEffect(() => {
                             
                         </div>
                     </div>
-                    <div className="absolute bottom-0  right-0 flex  items-center justify-center ">
-                        <div onClick={() => setAddMeal(true)} className="  hover:cursor-pointer bg-white rounded-tl-full p-3 flex justify-center items-center">
-                            <FontAwesomeIcon icon={faPlus} className="text-white text-xl xs:text-2xl bg-healthyGreen hover:bg-healthyDarkGreen rounded-full p-3 xs:p-5  shadow-lg ml-3 xs:ml-4 mt-4 xs:mt-6 " />
+                    <div className="absolute bottom-0 right-0 flex items-center justify-center gap-4 p-4">
+
+                    {/* Daily Menu */}
+                    <div
+                    onClick={() => setShowDailyMenu(true)}
+                    className="hover:cursor-pointer flex items-center group transition-all duration-200 ease-in-out transform hover:scale-105"
+                    role="button"
+                    tabIndex={0} 
+                    aria-label="Open Daily Menu" 
+                    onKeyDown={(e) => e.key === 'Enter' && setShowDailyMenu(true)} 
+                    >
+                    <div className="flex items-center text-white bg-healthyOrange hover:from-orange-600 hover:to-orange-700 rounded-full px-5 py-3 shadow-xl hover:shadow-2xl group-hover:shadow-2xl transition-shadow">
+                        <FontAwesomeIcon icon={faUtensils} className="text-white text-lg mr-3" />
+                        <p className="font-semibold text-sm md:text-base">Daily Menu</p>
+                    </div>
+                    </div>
+
+                    {/* Add Meal */}
+                    <div
+                        onClick={() => setAddMeal(true)}
+                        className="hover:cursor-pointer flex items-center group transition-all duration-200 ease-in-out transform hover:scale-105"
+                        role="button" 
+                        tabIndex={0} 
+                        aria-label="Add Meal" 
+                        onKeyDown={(e) => e.key === 'Enter' && setAddMeal(true)} 
+                    >
+                        <div className="flex items-center text-white bg-healthyGreen hover:from-green-600 hover:to-green-700 rounded-full px-5 py-3 shadow-xl hover:shadow-2xl group-hover:shadow-2xl transition-shadow">
+                        <FontAwesomeIcon icon={faPlus} className="text-white text-lg mr-3" />
+                        <p className="font-semibold text-sm md:text-base">Log Food</p>
                         </div>
                     </div>
+
+                    </div>
+
                 </div>
                 
                 {(window.innerWidth >= '1024') && (
@@ -451,9 +509,21 @@ useEffect(() => {
             {addMeal &&
                 <PopUp user={user}  newFood={newFood} setAddMeal={setAddMeal} foodData={foodData} handleAddMeal={handleAddMeal} setNewFood={setNewFood} setSelection={setSelection} selection={selection} platesData={platesData} drinksData={drinksData} />
             }
+                {showDailyMenu && dailyMenu && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+                        <div className="bg-white rounded-lg shadow-lg max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+                            <DailyMenu 
+                                dailyMenuData={dailyMenu} 
+                                onAddMeal={handleAddMealFromMenu}
+                                setSelection={setSelection}
+                                onClose={() => setShowDailyMenu(false)}
+                            />
+                        </div>
+                    </div>
+                )}
             {askForGoals && user && (
-    <Goals user={user} setUser={setUser} editGoals={updateUserGoals} />
-)}
+                <Goals user={user} setUser={setUser} editGoals={updateUserGoals} />
+            )}
 
         </div>
         
