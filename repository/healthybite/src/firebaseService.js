@@ -1069,3 +1069,36 @@ export const getDailyMenu = async () => {
         return null; // Return null or handle the error as needed
     }
 }
+export const updateWeeklyPlan = async (data) => {
+    try {
+        const token = await getIdToken()
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        const startDate = data.week_start;
+        const response=await axios.patch(`${ruta}/weekly-plan/${startDate}`, data,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    
+    return response.data;
+    }catch (error) {
+        console.error('Error updating weekly plan :', error);
+        return null; // Return null or handle the error as needed
+    }
+}
+export const getWeeklyPlan = async (week_start) => {
+    try {
+        const token = await getIdToken()
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        const response=await axios.get(`${ruta}/weekly-plan/${week_start}`, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    
+    return response.data;
+    }catch (error) {
+        console.error('Error fetching weekly plan :', error);
+        return null; // Return null or handle the error as needed
+    }
+}

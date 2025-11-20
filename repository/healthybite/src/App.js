@@ -10,6 +10,7 @@ import Category from './pages/Category/Category';
 import Dashboard from './pages/Dashboard/Dashboard';
 import { Plates } from './pages/Plates/Plates';
 import { Drinks } from './pages/Drinks/Drinks';
+import Planner from './pages/Planner/Planner';
 import { Community } from './pages/Community/Community';
 import { createContext, useEffect, useState } from 'react';
 import { fetchUser, getIdToken, getUserNotification, markNotificationAsRead } from './firebaseService';
@@ -78,6 +79,7 @@ function App() {
           <Route path="/category" element={<ProtectedRoute element={<Category/>} />} />
           <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />} />
           <Route path="/community" element={<ProtectedRoute element={<Community />} />} />
+          <Route path="/Planner" element={<ProtectedRoute element={<Planner/>} />} />
         </Routes>
       </Router>
     </UserContext.Provider>

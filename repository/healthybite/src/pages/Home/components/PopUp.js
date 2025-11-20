@@ -11,7 +11,7 @@ import Menu from './Menu';
 import emptyPlate from '../../../assets/emptyPlate.png'
 import emptyGlass from '../../../assets/emptyGlass.png'
 
-const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, selection, setSelection, platesData, drinksData, user }) => {
+const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, selection, setSelection, platesData, drinksData, user, }) => {
     const [searchFood, setSearchFood] = useState(foodData);
     const [addFood, setAddFood] = useState(false);
     const [openMenu, setOpenMenu]=useState(false)
