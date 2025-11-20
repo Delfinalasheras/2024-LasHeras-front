@@ -3,27 +3,25 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes, faShoppingCart, faUtensils } from '@fortawesome/free-solid-svg-icons';
 import { getShoppingList } from '../../../firebaseService';
 import Lottie from 'lottie-react';
-import shoppingAnimation from './shopping-animation.json'; // descargala y ponela aquí
+import shoppingAnimation from './shopping-animation.json'; 
 const ShoppingList = ({ weekstart, setShowShoppingList, cachedData, setCachedData }) => {
     const [shoppingList, setShoppingList] = useState(cachedData || null);
     const [isLoading, setIsLoading] = useState(!cachedData);
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        // SI YA TENEMOS DATOS, NO HACEMOS NADA (Salimos de la función)
         if (cachedData) {
             return; 
         }
 
         const fetchShoppingList = async () => {
-            setIsLoading(true); // Aseguramos que se vea el loading
+            setIsLoading(true);
             try {
                 const data = await getShoppingList(weekstart);
                 const validData = data && typeof data === "object" ? data : {};
                 
                 setShoppingList(validData);
                 
-                // GUARDAMOS EN EL PADRE PARA LA PRÓXIMA
                 if (setCachedData) {
                     setCachedData(validData);
                 }
@@ -54,8 +52,6 @@ const ShoppingList = ({ weekstart, setShowShoppingList, cachedData, setCachedDat
             </div>
         );
     }
-
-    // ========== ERROR ==========
     if (error) {
         return (
             <div className="fixed inset-0 bg-black/50 z-[90] flex justify-center items-center backdrop-blur-sm px-4">
