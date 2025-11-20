@@ -1102,3 +1102,18 @@ export const getWeeklyPlan = async (week_start) => {
         return null; // Return null or handle the error as needed
     }
 }
+export const getShoppingList = async (week_start) => {
+    try {
+        const token = await getIdToken()
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        const response=await axios.get(`${ruta}/shoppingList/${week_start}`, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    
+    return response.data;
+    }catch (error) {
+        console.error('Error fetching shopping list :', error);
+        return null; // Return null or handle the error as needed
+    }}

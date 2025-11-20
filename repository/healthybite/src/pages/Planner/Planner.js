@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useContext } from "react";
-// Ya no necesitamos axios aquí, solo en firebaseService.js
-// import axios from "axios"; 
 import PopUp from "../Home/components/PopUp";
+import ShoppingList from "./components/ShoppingList";
 import { 
     fetchAllFoods, getUserPlates, getPlatesNotUser, getUserDrinks, 
     fetchUser, 
-    // Ahora usamos las funciones de weekly plan importadas:
     getWeeklyPlan, 
     updateWeeklyPlan 
 } from "../../firebaseService";
@@ -20,7 +18,6 @@ import NavBar from "../../components/NavBar";
 const MEALS = ["breakfast", "lunch", "snack", "dinner"];
 const DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 
-// *** CORRECCIÓN 1: Añadir la propiedad 'icon' al MEAL_CONFIG para la vista móvil ***
 const MEAL_CONFIG = {
     breakfast: { label: "Breakfast", icon: "🍳" },
     lunch: { label: "Lunch", icon: "🍽️" },
@@ -28,32 +25,25 @@ const MEAL_CONFIG = {
     dinner: { label: "Dinner", icon: "🌙" }
 };
 
-// --- HELPER FUNCTIONS (Algoritmos de Fecha) ---
 
-// 1. Obtener el Lunes de la semana de una fecha dada
 const getStartOfWeek = (date) => {
     const d = new Date(date);
-    const day = d.getDay(); // 0 (Domingo) a 6 (Sábado)
-    // Si es domingo (0), restamos 6 días. Si no, restamos (day - 1)
+    const day = d.getDay(); 
     const diff = d.getDate() - day + (day === 0 ? -6 : 1);
     const monday = new Date(d.setDate(diff));
-    monday.setHours(0, 0, 0, 0); // Normalizamos hora
+    monday.setHours(0, 0, 0, 0); 
     return monday;
 };
 
-// 2. Formatear fecha a String YYYY-MM-DD (para la BBDD y comparaciones)
 const formatDateISO = (date) => {
     return date.toISOString().split('T')[0];
 };
 
-// 3. Generar la estructura de la semana con FECHAS calculadas
 const generateEmptyWeek = (startMondayDate) => {
     const daysObj = {};
-    // Clonamos para no mutar la referencia original mientras iteramos
     const currentIterDate = new Date(startMondayDate);
 
     DAYS.forEach((dayName, index) => {
-        // Calculamos la fecha de este día específico
         const dayDate = new Date(currentIterDate);
         dayDate.setDate(startMondayDate.getDate() + index);
 
@@ -69,22 +59,18 @@ const generateEmptyWeek = (startMondayDate) => {
 };
 
 
+
 function Planner() {
     const { user_id } = useContext(UserContext);
-
-    // ESTADO INICIALIZADO CON ALGORITMO
-    // 1. Calculamos el lunes de HOY
     const [weekStart, setWeekStart] = useState(() => {
         const monday = getStartOfWeek(new Date());
         return formatDateISO(monday);
     });
-    
-    // 2. Inicializamos el plan con las fechas calculadas
     const [plan, setPlan] = useState(() => {
         const monday = getStartOfWeek(new Date());
         return {
             week_start: formatDateISO(monday),
-            days: generateEmptyWeek(monday) // Esto llena monday: { date: '...', meals...}
+            days: generateEmptyWeek(monday) 
         };
     });
 
@@ -102,7 +88,9 @@ function Planner() {
     const [currentMeal, setCurrentMeal] = useState(null);
     const [loading, setLoading] = useState(true);
     const [selectedDayIndex, setSelectedDayIndex] = useState(0);
-
+    const [allPlatesMap, setAllPlatesMap] = useState({});
+    const [showShoppingList, setShowShoppingList] = useState(false);
+    const [shoppingListCache, setShoppingListCache] = useState(null);
     // Efecto al cambiar de semana
     useEffect(() => { fetchPlan(); }, [weekStart]);
 
@@ -114,6 +102,13 @@ function Planner() {
                 const [food, privatePlates, otherPlates, drinks, userInfo] = await Promise.all([
                     fetchAllFoods(), getUserPlates(user_id), getPlatesNotUser(user_id), getUserDrinks(user_id), fetchUser()
                 ]);
+                const allPlatesMap = {};
+                const allFoods = [...food, ...privatePlates, ...otherPlates, ...drinks];
+                allFoods.forEach(item => {
+                    allPlatesMap[item.id] = item; 
+                });
+                setAllPlatesMap(allPlatesMap);
+                console.log("allFoods", allFoods);
                 const sortedFood = food.sort((a, b) => a.name.toUpperCase() < b.name.toUpperCase() ? -1 : 1);
                 setFoodData(sortedFood);
                 setPlatesData({ mines: privatePlates, others: otherPlates });
@@ -123,25 +118,42 @@ function Planner() {
         };
         fetchData();
     }, [user_id]);
-
-    // *** CORRECCIÓN 1: Usar getWeeklyPlan ***
+    const calculateDayTotalCalories = (dayData) => {
+        let totalCalories = 0;
+        MEALS.forEach(meal => {
+            const mealList = dayData[meal] || [];
+            mealList.forEach(item => {
+                const plateDetails = allPlatesMap[item.plate_id];
+    
+                if (plateDetails) {
+                    // B. Obtener los valores necesarios
+                    
+                    const caloriesPerPortion = plateDetails.calories_portion || 0;
+                    const portionAmount = plateDetails.measure_portion || 1; // Asumimos 1 si no está definido
+                    const amountEaten = item.amount_eaten || 0; 
+                    
+                    // C. Aplicar la fórmula: (cant consumida * calorías x porción) / porción
+                    if (portionAmount > 0) {
+                        const calories = (amountEaten * caloriesPerPortion) / portionAmount;
+                        totalCalories += calories;
+                    }
+                }
+            });
+        });
+        return Math.round(totalCalories); 
+    };
     const fetchPlan = async () => {
         setLoading(true);
         try {
-            // 1. Intentamos buscar data existente usando el servicio
             const existingPlan = await getWeeklyPlan(weekStart); 
 
             if (existingPlan) {
-                // 2. Si hay data, la establecemos
                 setPlan({
                     week_start: weekStart,
-                    // El backend debería devolver un objeto de 'days' con fechas correctas,
-                    // pero mantenemos la estructura por si acaso.
                     days: existingPlan.days 
                 });
                 setHasUnsavedChanges(false);
             } else {
-                 // 3. Si no hay plan (null o error), generamos uno nuevo.
                 const currentMonday = new Date(weekStart + 'T00:00:00'); 
                 setPlan({
                     week_start: weekStart,
@@ -150,7 +162,6 @@ function Planner() {
             }
         } catch (err) {
             console.error("Error fetching plan, initializing empty plan:", err);
-            // Fallback a plan vacío si hay error
             const currentMonday = new Date(weekStart + 'T00:00:00'); 
             setPlan({
                 week_start: weekStart,
@@ -160,18 +171,21 @@ function Planner() {
              setLoading(false);
         }
     };
+    const openShoppingList = () => {
+        setShowShoppingList(true);
+    };
 
-    // *** CORRECCIÓN 2: Usar updateWeeklyPlan ***
+
     const handleSaveChanges = async () => {
-        console.log("💾 GUARDANDO PAYLOAD CON FECHAS:", JSON.stringify(plan, null, 2));
+        console.log("GUARDANDO PAYLOAD CON FECHAS:", JSON.stringify(plan, null, 2));
         setLoading(true);
         
         try {
-            // El servicio updateWeeklyPlan espera el objeto 'plan' completo (incluyendo week_start)
             const response = await updateWeeklyPlan(plan); 
 
             if (response) {
                 setHasUnsavedChanges(false);
+                setShoppingListCache(null);
                 console.log("Guardado exitoso!");
             } else {
                  throw new Error("API did not return a successful response.");
@@ -187,20 +201,16 @@ function Planner() {
     const handleAddMealForPlan = async () => {
         if (!selection || !currentDay || !currentMeal) return;
         console.log("Adding to plan:", selection);
-        
-        // Aseguramos que el objeto de ítem contenga las propiedades que el backend espera
         const newItem = { 
             plate_id: selection.id_food, 
             name: selection.name,
-            amount_eaten: selection.amount // Añade la cantidad si es relevante
+            amount_eaten: selection.amount 
         };
 
         const updatedPlan = { ...plan };
-        // Nos aseguramos de no borrar la fecha al actualizar
         const currentDayObj = updatedPlan.days[currentDay];
         const currentList = currentDayObj[currentMeal] || [];
         
-        // Actualizamos solo la lista de comidas, manteniendo la propiedad "date" intacta
         updatedPlan.days[currentDay] = {
             ...currentDayObj,
             [currentMeal]: [...currentList, newItem]
@@ -235,7 +245,6 @@ function Planner() {
         const updatedPlan = { ...plan };
         
         selectedDaysToCopy.forEach(targetDay => {
-            // Clonamos el array de items para que no compartan referencia
             updatedPlan.days[targetDay][copyConfig.mealType] = copyConfig.items.map(item => ({ ...item }));
         });
 
@@ -248,30 +257,16 @@ function Planner() {
         if(hasUnsavedChanges) {
             if(!window.confirm("You have unsaved changes. Discard them?")) return;
         }
-        
-        // Calculamos nueva semana basada en el weekStart actual
-        const current = new Date(weekStart + 'T00:00:00'); // Fix timezone
+        setShoppingListCache(null);
+        const current = new Date(weekStart + 'T00:00:00'); 
         current.setDate(current.getDate() + (direction * 7));
         const newWeekStart = formatDateISO(current);
         
         setWeekStart(newWeekStart);
-        // El useEffect de [weekStart] se encargará de llamar a fetchPlan
-    };
-
-    const generateShoppingList = async () => {
-        const items = [];
-        Object.values(plan.days).forEach(dayMeals => {
-            MEALS.forEach(mealType => {
-                const list = dayMeals[mealType];
-                if(list && list.length > 0) list.forEach(i => items.push(i.name));
-            });
-        });
-        alert("Shopping List Items: " + items.length);
     };
 
     const dayHasMeals = (day) => {
         if (!plan?.days?.[day]) return false;
-        // Filtramos para no contar la key "date" como una comida
         return MEALS.some(meal => plan.days[day][meal] && plan.days[day][meal].length > 0);
     };
 
@@ -372,6 +367,9 @@ function Planner() {
                                                     {plan?.days?.[DAYS[selectedDayIndex]]?.date}
                                                 </span>
                                             </h2>
+                                            <p className="text-lg font-semibold text-healthyGreen mt-1">
+            Total Calories: {calculateDayTotalCalories(plan.days[DAYS[selectedDayIndex]])} Kcal
+        </p>
                                         </div>
                                     </div>
                                 </div>
@@ -593,13 +591,21 @@ function Planner() {
                         </div>
                     )}
 
-                    {/* Shopping List Button (visible solo si hay data) */}
-                    {dayHasMeals(DAYS[0]) && ( // Simple check, si el lunes tiene algo
+                    {dayHasMeals(DAYS[0]) && (
+        
                         <button 
-                            onClick={generateShoppingList} 
-                            className="fixed bottom-4 right-4 bg-healthyDarkGray1 hover:bg-gray-700 text-white p-4 rounded-full shadow-lg transition z-30 flex items-center gap-2 font-bold"
-                        >
+                            onClick={openShoppingList}
+                            className="fixed bottom-4 right-4 bg-healthyDarkGray1 hover:bg-gray-700 text-white p-4 rounded-full shadow-lg transition z-30 flex items-center gap-2 font-bold">
                             <FontAwesomeIcon icon={faShoppingCart} size="lg" />
+                            
+                            {showShoppingList && (
+                <ShoppingList 
+                    weekstart={weekStart} 
+                    setShowShoppingList={setShowShoppingList}
+                    cachedData={shoppingListCache}
+                    setCachedData={setShoppingListCache}
+                />
+            )}
                             <span className="md:inline hidden">Shopping List</span>
                         </button>
                     )}
