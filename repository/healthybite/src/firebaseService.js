@@ -1053,13 +1053,13 @@ export const getRecomendations = async (timeDay) => {
     }
 }
 
-export const getDailyMenu = async () => {
+export const getDailyMenu = async (day) => {
     try {
         const token = await getIdToken()
         if( !token){
             throw new Error ('Token not found')
         }
-        const response=await axios.get(`${ruta}/buildDailyMenu/`, 
+        const response=await axios.get(`${ruta}/getOrbuildDailyMenu/${day}`, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
     

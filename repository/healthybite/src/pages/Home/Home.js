@@ -39,24 +39,11 @@ function Home() {
     const [goalConsumed, setGoalConsumed]=useState(0)
     const [streak, setStreak] = useState(0);
     const [askForGoals, setAskForGoals]=useState(false)
-    const [dailyMenu, setDailyMenu] = useState(null); // New state for daily menu
+
     const [showDailyMenu, setShowDailyMenu] = useState(false); // State to control popup visibility
 
     // Fetch daily menu
-    useEffect(() => {
-        const fetchDailyMenuData = async () => {
-            if (user_id) {
-                try {
-                    const menuData = await getDailyMenu(user_id);
-                    setDailyMenu(menuData);
-                } catch (error) {
-                    console.error("Error fetching daily menu:", error);
-                }
-            }
-        };
-
-        fetchDailyMenuData();
-    }, [user_id, date]); // Refetch when user_id or date changes
+// Refetch when user_id or date changes
 
 
     useEffect(()=>{
@@ -320,11 +307,7 @@ function Home() {
     };
     
 
-// Handler for adding meal from daily menu
-const handleAddMealFromMenu = (mealData) => {
-    setSelection(mealData);
-    handleAddMeal();
-};
+
 
 const handleDeleteMeal = async (idDoc_user_food) => {
     try {
@@ -466,7 +449,6 @@ useEffect(() => {
                     </div>
                     <div className="absolute bottom-0 right-0 flex items-center justify-center gap-4 p-4">
 
-                    {/* Daily Menu */}
                     <div
                     onClick={() => setShowDailyMenu(true)}
                     className="hover:cursor-pointer flex items-center group transition-all duration-200 ease-in-out transform hover:scale-105"
@@ -481,7 +463,6 @@ useEffect(() => {
                     </div>
                     </div>
 
-                    {/* Add Meal */}
                     <div
                         onClick={() => setAddMeal(true)}
                         className="hover:cursor-pointer flex items-center group transition-all duration-200 ease-in-out transform hover:scale-105"
@@ -509,18 +490,10 @@ useEffect(() => {
             {addMeal &&
                 <PopUp user={user}  newFood={newFood} setAddMeal={setAddMeal} foodData={foodData} handleAddMeal={handleAddMeal} setNewFood={setNewFood} setSelection={setSelection} selection={selection} platesData={platesData} drinksData={drinksData} />
             }
-                {showDailyMenu && dailyMenu && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-                        <div className="bg-white rounded-lg shadow-lg max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
-                            <DailyMenu 
-                                dailyMenuData={dailyMenu} 
-                                onAddMeal={handleAddMealFromMenu}
-                                setSelection={setSelection}
-                                onClose={() => setShowDailyMenu(false)}
-                            />
-                        </div>
-                    </div>
-                )}
+            {showDailyMenu && (
+                <DailyMenu  setAddMeal={setShowDailyMenu} handleAddMeal={handleAddMeal} selection={selection} setSelection={setSelection}currentDate={date} allFoods={foodData} allPlates={platesData} allDrinks={drinksData}
+                />
+            )}
             {askForGoals && user && (
                 <Goals user={user} setUser={setUser} editGoals={updateUserGoals} />
             )}
