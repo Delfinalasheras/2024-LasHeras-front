@@ -57,7 +57,8 @@ function NewCategory({handleUpdate, setAddCategory, setAddFood, foods, platesDat
                 const data={
                     name: name,
                     icon: iconSelected.name,
-                    foods: selectedFoods
+                    foods: selectedFoods||[],
+                    
                 }
                 await createCategory(data)
                 setName('')

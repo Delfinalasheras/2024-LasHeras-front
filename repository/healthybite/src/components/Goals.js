@@ -5,6 +5,8 @@ import { faBookmark, faUser } from '@fortawesome/free-solid-svg-icons';
 
 function Goals({user, setUser, editGoals}) {
 
+    console.log("GOALS USER → ", user)
+    
     const [calories, setCalories] = useState(user.goals.calories ? user.goals.calories : 0);
     const [sodium, setSodium] = useState(user.goals.sodium ? user.goals.sodium : 0);
     const [carbohydrate, setCarbohydrate] = useState(user.goals.carbohydrates ? user.goals.carbohydrates : 0);
@@ -13,10 +15,27 @@ function Goals({user, setUser, editGoals}) {
     const [caffeine, setCaffeine]=useState(user.goals.caffeine ? user.goals.caffeine : 0)
     const [sugar, setSugar]=useState(user.goals.sugar ? user.goals.sugar : 0)
 
-    const saveChanges=()=>{
-        setUser({...user, goals: {calories:calories, fats:fat, carbohydrates:carbohydrate, protein:protein, sodium:sodium, sugar:sugar, caffeine:caffeine},})
-        editGoals && editGoals()
-    }
+    const saveChanges = () => {
+        const updatedUser = {
+            ...user,
+            goals: {
+                calories,
+                fats: fat,
+                carbohydrates: carbohydrate,
+                protein,
+                sodium,
+                sugar,
+                caffeine,
+            },
+        };
+    
+        setUser(updatedUser);
+    
+        if (editGoals) {
+            editGoals(updatedUser);
+        }
+    };
+    
     return (
         <div className="w-full absolute z-50 top-0 left-0 h-screen bg-black/40">
             <div className="w-full flex items-center justify-center h-full">

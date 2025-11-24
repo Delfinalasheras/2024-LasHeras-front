@@ -1,16 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faCheck, faXmark, faCircleXmark } from '@fortawesome/free-solid-svg-icons'; 
+import { faPlus, faCheck, faXmark, faCircleXmark, faAngleRight } from '@fortawesome/free-solid-svg-icons'; 
 import FoodItem from './FoodItem';
+import RecommendationItem from './RecomendationItem';
 import Search from './Search';
 import messidepaul from '../../../assets/messidepaul.png'
 import NewFood from './NewFood';
-import { getProducts } from '../../../firebaseService';
+import { getProducts, getRecomendations } from '../../../firebaseService';
 import Menu from './Menu';
 import emptyPlate from '../../../assets/emptyPlate.png'
 import emptyGlass from '../../../assets/emptyGlass.png'
 
-const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, selection, setSelection, platesData, drinksData }) => {
+const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, selection, setSelection, platesData, drinksData, user, }) => {
     const [searchFood, setSearchFood] = useState(foodData);
     const [addFood, setAddFood] = useState(false);
     const [openMenu, setOpenMenu]=useState(false)
@@ -19,7 +20,14 @@ const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, select
     const [loading, setLoading]=useState(true)
     const [message, setMessage] = useState(false);
     const [show, setShow] =useState(1);
-    const [clickable, setClickable] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [recommendations, setRecommendations] = useState({});
+    const [recsLoading, setRecsLoading] = useState(false);
+    
+    // Cache and invalidation tracking
+    const recommendationsCache = useRef(null);
+    const lastFetchTime = useRef(null);
+    const needsRefresh = useRef(false);
 
     const fetchMenu=async()=>{
         try{
@@ -32,6 +40,44 @@ const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, select
         }
     }
 
+    const fetchRecommendations = async (forceRefresh = false) => {
+        // Use cache if available and not forcing refresh
+        if (!forceRefresh && recommendationsCache.current && !needsRefresh.current) {
+            setRecommendations(recommendationsCache.current);
+            return;
+        }
+
+        setRecsLoading(true);
+        const recs = {};
+        
+        try {
+            // Fetch all recommendations in parallel instead of sequentially
+            const promises = [1, 2, 3, 4].map(i => 
+                getRecomendations(i).catch(error => {
+                    console.log(`Error fetching recommendations for time ${i}`);
+                    return [];
+                })
+            );
+            
+            const results = await Promise.all(promises);
+            results.forEach((result, index) => {
+                recs[index + 1] = result;
+            });
+            
+            // Update cache
+            recommendationsCache.current = recs;
+            lastFetchTime.current = Date.now();
+            needsRefresh.current = false;
+            
+            setRecommendations(recs);
+        } catch (error) {
+            console.log('Error fetching recommendations:', error);
+            setRecommendations({});
+        } finally {
+            setRecsLoading(false);
+        }
+    };
+
     const handleOpenMenu=()=>{
         if (openMenu){
             setOpenMenu(false) 
@@ -40,13 +86,19 @@ const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, select
             fetchMenu()
         }
     }
-    const handleSingleClickAddMeal = () => {
-        if (clickable) {
-            setClickable(false); // Disable further clicks
-            handleAddMeal(); // Call your existing handleAddMeal logic
-            setTimeout(() => {
-                setClickable(true); // Re-enable after a delay (or based on a condition)
-            }, 1000); // Optional delay to prevent excessive clicks
+
+    const handleSingleClickAddMeal = async () => {
+        if (isSubmitting) return;
+        
+        setIsSubmitting(true);
+        
+        try {
+            await handleAddMeal();
+            // Mark recommendations as needing refresh after meal is added
+            needsRefresh.current = true;
+        } catch (error) {
+            console.error('Error in handleSingleClickAddMeal:', error);
+            setIsSubmitting(false);
         }
     };
 
@@ -54,21 +106,25 @@ const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, select
         message && setInterval(()=>setMessage(false), 3000)
     },[message])
 
-    useEffect(()=>{
-        newFood && setMessage('The food was added succesfully!')
-    },[newFood])
-
-    useEffect(()=>{
-
-        setSearchFood(foodData)
-        
-    },[foodData])
+    useEffect(() => {
+        if (newFood) {
+            setMessage('Food was added successfully!');
+            setTimeout(() => setMessage(false), 3000);
+        }
+    }, [newFood]);
 
     useEffect(()=>{
         show === 1 && searchFood!==foodData && setSearchFood(foodData)
         show === 2 && setSearchFood(platesData)
         show === 3 && setSearchFood(drinksData)
     },[show])
+
+    useEffect(() => {
+        // Only fetch recommendations when switching to tab 4
+        if (show === 4) {
+            fetchRecommendations();
+        }
+    }, [show]);
 
     return (
         <div className="w-full h-screen absolute top-0 z-50 flex justify-center items-center bg-black/30">
@@ -97,28 +153,60 @@ const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, select
                             <Search foodData={show===1 ? foodData : null } platesData={show === 2 ? platesData : null}  drinksData={show === 3 ? drinksData : null}   setSearchFood={setSearchFood} />
                             <div 
                                 onClick={() => setAddFood(true)} 
-                                className="flex w-2/12 sm:w-4/12 flex-row ml-3 justify-center items-center py-2 px-4 rounded-2xl font-semibold text-md text-darkGray font-quicksand hover:cursor-pointer bg-white/70 hover:bg-white/90"
+                                className="flex w-2/12 sm:w-2/12 flex-row ml-3 justify-center items-center py-2 px-4 rounded-2xl font-semibold text-md text-darkGray font-quicksand hover:cursor-pointer bg-white/70 hover:bg-white/90"
                             >
                                 <FontAwesomeIcon icon={faPlus} className="text-darkGray text-lg sm:text-xl" />
                                 {window.innerWidth > '650' && <p className="ml-2 text-center"></p>}
                             </div>
                         </div>
-                        <div className='flex mt-3 justify-around w-full items-center  font-quicksand font-semibold text-sm text-healthyGray'> 
-                            <button onClick={()=>setShow(1)} className={`${show===1 ? 'text-healthyDarkGray1  bg-white/40 rounded-t-md font-bold' : 'text-healthyGray1  '} w-1/3 py-2`}>Food</button>
-                            <button onClick={()=>setShow(2)} className={`${show===2 ? 'text-healthyDarkGray1  bg-white/40 rounded-t-md font-bold' : 'text-healthyGray1  '} w-1/3 py-2`}>Plate</button>
-                            <button onClick={()=>setShow(3)} className={`${show===3 ? 'text-healthyDarkGray1  bg-white/40 rounded-t-md font-bold' : 'text-healthyGray1  '} w-1/3 py-2`}>Drinks</button>
+                        <div className='flex mt-2 justify-around w-full items-center  font-quicksand font-semibold text-sm text-healthyGray'> 
+                            <button onClick={()=>setShow(1)} className={`${show===1 ? 'text-healthyDarkGray1  bg-white/40 rounded-t-md font-bold' : 'text-healthyGray1  '} w-1/4 py-2`}>Food</button>
+                            <button onClick={()=>setShow(2)} className={`${show===2 ? 'text-healthyDarkGray1  bg-white/40 rounded-t-md font-bold' : 'text-healthyGray1  '} w-1/4 py-2`}>Plate</button>
+                            <button onClick={()=>setShow(3)} className={`${show===3 ? 'text-healthyDarkGray1  bg-white/40 rounded-t-md font-bold' : 'text-healthyGray1  '} w-1/4 py-2`}>Drinks</button>
+                            <button onClick={()=>setShow(4)} className={`${show===4 ? 'text-healthyDarkGray1  bg-white/40 rounded-t-md font-bold' : 'text-healthyGray1  '} w-1/4 py-2`}>Recommendations</button>
                         </div>
-                        {!addFood && ( ((show===1 || show===3) && searchFood?.length > 0) || (show===2 && (searchFood?.mines?.length>0 || searchFood?.others?.length>0) ) ? (
-                            <div className="bg-white/40 p-2 rounded-b-lg w-full max-h-[350px] md:max-h-[500px] lg:max-h-[330px]  overflow-y-auto">
-                                {show===2 && searchFood.mines && searchFood.others ?
+                        
+                        {/* Loading state for recommendations */}
+                        {show === 4 && recsLoading ? (
+                            <div className='w-full h-[350px] md:h-[500px] lg:h-[330px] bg-white/40 overflow-y-auto flex justify-center flex-col items-center'>
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-healthyOrange"></div>
+                                <p className='font-quicksand font-bold text-sm mt-4 text-healthyGray1'>Loading recommendations...</p>
+                            </div>
+                        ) : !addFood && ( ((show===1 || show===3) && searchFood?.length > 0) || (show===2 && (searchFood?.mines?.length>0 || searchFood?.others?.length>0) ) || (show===4 && Object.values(recommendations).some(arr => arr.length > 0)) ? (
+                            <div className="bg-white/40 p-2 rounded-b-lg w-full max-h-[250px] md:max-h-[500px] lg:max-h-[330px]  overflow-y-auto">
+                                {show===4 ? (
+                                    <div className='flex flex-col w-full'>
+                                        {needsRefresh.current && (
+                                            <div className="bg-healthyOrange/20 border border-healthyOrange rounded-lg p-2 mb-2 flex items-center justify-between">
+                                                <p className='text-xs text-healthyDarkOrange font-quicksand font-semibold'>
+                                                    Recommendations may be outdated
+                                                </p>
+                                                <button 
+                                                    onClick={() => fetchRecommendations(true)}
+                                                    className='text-xs bg-healthyOrange text-white px-2 py-1 rounded font-quicksand font-bold hover:bg-healthyDarkOrange'
+                                                >
+                                                    Refresh
+                                                </button>
+                                            </div>
+                                        )}
+                                        {['Breakfast', 'Lunch', 'Snack', 'Dinner'].map((time, i) => (
+                                            <div key={i}>
+                                                <p className='text-xs font-bold text-healthyGray1 font-quicksand pb-1 border-b-2 border-healthyGray1 mb-1 w-full text-left'>{time}</p>
+                                                {recommendations[i+1]?.length > 0 ? recommendations[i+1].map((food, index) => (
+                                                    <RecommendationItem key={`${i}-${index}`} food={food} setSelection={setSelection} />
+                                                )) : <p className='text-xs text-healthyGray1 mb-2'>No recommendations for {time.toLowerCase()}</p>}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : show===2 && searchFood.mines && searchFood.others ?
                                 <div className='flex flex-col w-full '>
                                     <p className='text-xs font-bold text-healthyGray1 font-quicksand  pb-1 border-b-2 border-healthyGray1 mb-1 w-full text-left'>My plates</p>
                                     {show===2 && searchFood.mines.map((food, index) => (
-                                        <FoodItem key={index} food={food} setSelection={setSelection} />
+                                        <FoodItem key={index} food={food} setSelection={setSelection}  />
                                     ))}
                                     <p className='text-xs font-bold text-healthyGray1 font-quicksand pt-2 pb-1 border-b-2 border-healthyGray1 mb-1 w-full text-left'>Another plates</p>
                                     {show===2 && searchFood.others.map((food, index) => (
-                                        <FoodItem key={index} food={food} setSelection={setSelection} publicPlates={true}/>
+                                        <FoodItem key={index} food={food} setSelection={setSelection} publicPlates={true}  />
                                     ))}
                                 </div>
                                 : searchFood.length > 0 && searchFood.map((food, index) => (
@@ -128,7 +216,7 @@ const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, select
                         ) :
                         <div className='w-full h-[350px] md:h-[500px] lg:h-[330px] bg-white/40  overflow-y-auto flex justify-center flex-col items-center'>
                             <img src={show===3 ? emptyGlass : emptyPlate} className='w-1/3 md:w-1/5 opacity-30 ' alt={show===3 ? 'Empty glass' :'Empty plate'} />
-                            <p className='font-quicksand font-bold text-sm mt-3 text-healthyGray1 text-center w-3/4'>There are no {show==1 ? 'food' : show===2 ? 'plates' : 'drinks'}&nbsp;created</p>
+                            <p className='font-quicksand font-bold text-sm mt-3 text-healthyGray1 text-center w-3/4'>There are no {show==1 ? 'food created' : show===2 ? 'plates created' : show===3 ? 'drinks created' : 'recommendations, You already consumed one of your objetives'}</p>
                         </div>)}
                     </>
                 )}
@@ -152,14 +240,18 @@ const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, select
                 )}
                 {selection && (
                     <button 
-                    onClick={handleSingleClickAddMeal} 
-                    className="absolute bottom-2 right-2 font-quicksand text-sm px-3 py-1 flex items-center rounded-xl bg-healthyOrange text-white font-bold hover:cursor-pointer hover:bg-healthyDarkOrange"
-                >
-                    <FontAwesomeIcon icon={faCheck} className="text-white text-lg mr-2" />
-                    Save changes
-                </button>
-                
-                )}
+                        onClick={handleSingleClickAddMeal} 
+                        disabled={isSubmitting}
+                        className={`absolute bottom-2 right-2 font-quicksand text-sm px-3 py-1 flex items-center rounded-xl ${
+                            isSubmitting 
+                                ? 'bg-healthyOrange/50 cursor-not-allowed' 
+                                : 'bg-healthyOrange hover:bg-healthyDarkOrange hover:cursor-pointer'
+                        } text-white font-bold`}
+                    >
+                        <FontAwesomeIcon icon={faCheck} className="text-white text-lg mr-2" />
+                        {isSubmitting ? 'Saving...' : 'Save changes'}
+                    </button>
+                )}  
             </div>
         </div>
     );

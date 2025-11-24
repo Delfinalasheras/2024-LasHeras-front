@@ -26,7 +26,7 @@ export const Plates = () => {
     const [successMessage, setSuccessMessage] = useState('');
     const [selection , setSelection]=useState(null)
     const [notifications, setNotifications] = useState([]);
-
+    console.log("PLATES DATA ", plates)
     const fetchPlates = async () => {
         const unsubscribe = auth.onAuthStateChanged(async (user) => {
                 try {

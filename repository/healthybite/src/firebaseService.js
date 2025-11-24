@@ -1,28 +1,171 @@
 
 import { convertFieldResponseIntoMuiTextFieldProps } from "@mui/x-date-pickers/internals";
 import { auth, firestore } from "../src/firebaseConfig";
-import { getAuth, verifyPasswordResetCode, confirmPasswordReset } from 'firebase/auth';
+import { getAuth, verifyPasswordResetCode, confirmPasswordReset, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from 'firebase/auth';
 import axios from "axios";
+import { onAuthStateChanged } from "firebase/auth";
+import { Timestamp } from "firebase/firestore";
+const ruta='http://127.0.0.1:8000'
+let cachedUserUid = null;
 
-const store='https://two024-ranchoaparte-back.onrender.com'
-//const store='https://two024-ranchoaparte-back.onrender.com'
+export const getIdToken = async () => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) return null; 
+    return await currentUser.getIdToken();
+  };
 
+axios.interceptors.request.use(
+    async (config) => {
+        try {
+            const token = await getIdToken();
+            if (token) {
+                config.headers.Authorization = `Bearer ${token}`;
+
+                        }
+            return config;
+        } catch (error) {
+            console.error("No token available:", error);
+            return config;
+        }
+    },
+    (error) => Promise.reject(error)
+);
+
+
+export const registerUser = async (email, password, name, surname, weight, height, birthDate) => {
+    try {
+        // Create the user (this automatically signs them in)
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        console.log("USER INFO LOG IN", email, password, name, surname, weight, height, birthDate)
+        // Prepare data with proper validation for weight and height
+        const parsedWeight = Math.max(0, parseFloat(weight) || 0);  // Ensure >= 0, default to 0 if invalid
+        const parsedHeight = Math.max(0, parseFloat(height) || 0);  // Ensure >= 0, default to 0 if invalid
+        
+        const data = {
+            name: name,
+            surname: surname,
+            weight: parsedWeight,
+            height: parsedHeight,
+            birthDate: new Date(birthDate),
+            goals: {
+                calories: 0,
+                sodium: 0,
+                protein: 0,
+                carbohydrates: 0,
+                fats: 0,
+                sugar: 0,
+                caffeine: 0,
+            },
+            validation: 0,
+            achievements: [],
+            email: email,
+        };
+        console.log("USER INFO LOG IN", data)
+        
+        // Get the ID token from the user
+        const token = await userCredential.user.getIdToken();
+        if (!token) {
+            throw new Error('Token not found');
+        }
+        
+        // Send to backend
+        await axios.post(`${ruta}/RegisterUser`, data, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+        
+        // Fetch and return the user
+        const user = await fetchUser();
+        if (user) {
+            return userCredential.user.uid;
+        }
+    } catch (error) {
+        throw error;  // Re-throw to let the caller handle it
+    }
+};
+
+
+export const loginUser = async (email, password) => {
+    try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        await userCredential.user.getIdToken()
+        return userCredential.user.uid;
+    } catch (error) {
+        throw error
+    }
+};
+
+export const forgotPassword = async (email) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      return "Reset email sent";
+    } catch (error) {
+      throw error.message;
+    }
+  };
+export const logoutUser = async () => {
+    try {
+        const token = await getIdToken()
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        await signOut(auth);
+    } catch (error) {
+        throw error.message;
+    }
+};
+
+export const getUserUid = async () => {
+    if (cachedUserUid) {
+        return cachedUserUid;
+    }
+    return new Promise((resolve, reject) => {
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                cachedUserUid = user.uid; // Cache the UID
+                resolve(user.uid);
+            } else {
+                reject(new Error("No user is currently logged in."));
+            }
+        });
+    });
+};
 
 export const fetchUser=async()=>{
     try {
-        const response = await axios.get(`https://two024-ranchoaparte-back.onrender.com/User/${auth.currentUser.uid}`);
-        
-        return response.data; // Adjust this based on your backend response structure
+        const token = await getIdToken()
+        console.log(token)
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        const response = await axios.get(`${ruta}/getUser`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+        console.log("RESPONSE DATA",response.data)
+        return response.data.user; // Adjust this based on your backend response structure
     } catch (error) {
         console.error('Error fetching user by ID:', error);
         return null; // Return null or handle the error as needed
     }
 }
+  
 
 export const editUserData=async(data)=>{
+    
     try {
-        console.log("USERDATA",data)
-        const response = await axios.put(`https://two024-ranchoaparte-back.onrender.com/update_user/${auth.currentUser.uid}`, data);
+        const token = await getIdToken()
+        console.log("INFORMACION PARA ACTUALIZAR",data)
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        const response = await axios.put(`${ruta}/update_user/`, data,{
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`
+            }
+        });
         
         return response.data; // Adjust this based on your backend response structure
     } catch (error) {
@@ -31,20 +174,27 @@ export const editUserData=async(data)=>{
     }
 }
 
-export const deleteUserAc=async()=>{
+export const deleteUserAc=async(user_id)=>{
     try {
-        await axios.delete(`https://two024-ranchoaparte-back.onrender.com/delete-user/${auth.currentUser.uid}`); // Adjust this based on your backend response structure
+        const token = await getIdToken()
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        const response = await axios.delete(`${ruta}/delete_user/${user_id}`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }); 
+        return response
     } catch (error) {
         console.error('Error deleting user by ID:', error);
         return null; // Return null or handle the error as needed
     }
 }
 
-export const fetchUserFoods = async (date) => {
-    const userFood = await userFoodMeals(); // Wait for the promise to resolve
+export const fetchUserFoods = async (user_id, date) => {
+    const userFood = await userFoodMeals(user_id); 
     if (!userFood) return []; // Handle if there's no data
-
-    // Filter the food based on the provided date
     const filteredFood = userFood.filter(doc => {
         let ingestedDate;
         if (doc.date_ingested.seconds) {
@@ -67,7 +217,11 @@ export const fetchUserFoods = async (date) => {
 
 export const fetchFoodByID = async (foodId) => {
     try {
-        const response = await axios.get(`https://two024-ranchoaparte-back.onrender.com/Foods/${foodId}`);
+        const token = await getIdToken()
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        const response = await axios.get(`${ruta}/Foods/${foodId}`);
         return response.data.message.food; // Adjust this based on your backend response structure
     } catch (error) {
         console.error('Error fetching food by ID:', error);
@@ -77,7 +231,15 @@ export const fetchFoodByID = async (foodId) => {
 
 const userFoodMeals = async()=>{
     try {
-        const response = await axios.get(`https://two024-ranchoaparte-back.onrender.com/mealUserDay/${auth.currentUser.uid}`);
+        const token = await getIdToken()
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        const response = await axios.get(`${ruta}/mealUserDay/`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }); 
         return response.data.message.foods; // Adjust this based on your backend response structure
     } catch (error) {
         console.error('Error fetching food by ID:', error);
@@ -89,9 +251,12 @@ const userFoodMeals = async()=>{
 
 export const fetchAllFoods = async () => {
     try {
-        const response = await axios.get(`https://two024-ranchoaparte-back.onrender.com/Foods/`);
-        console.log(response.data.message.food)
-        return response.data.message.food; // Adjust this based on your backend response structure
+        const token = await getIdToken()
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        const response = await axios.get(`${ruta}/Foods/`);
+        return response.data.message.food;
     } catch (error) {
         console.error('Error fetching foods:', error);
         return []; // Return an empty array or handle the error as needed
@@ -99,22 +264,27 @@ export const fetchAllFoods = async () => {
 };
 
 
-export const addUserFood = async (selection, date, amount) => {
+export const addUserFood = async (user_id,selection, date, amount) => {
     try {
-        const response = await fetch(`https://two024-ranchoaparte-back.onrender.com/UserFood_log`, {
+        const token = await getIdToken()
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        const response = await fetch(`${ruta}/UserFood_log`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`
             },
             body: JSON.stringify( {
-                "id_User": auth.currentUser.uid,
+                "id_User": user_id,
                 "id_Food": selection.id_food,
                 "date_ingested": date.toISOString(),
                 "amount_eaten": Number(selection.amount),
             }),
             
         });
-        console.log(auth.currentUser.uid,selection.id_food,date.toISOString(),Number(selection.amount))
+        console.log(user_id,selection.id_food,date.toISOString(),Number(selection.amount))
         const data = await response.json();
 
         if (!response.ok) {
@@ -122,47 +292,57 @@ export const addUserFood = async (selection, date, amount) => {
         }
 
         console.log("Food added successfully:", data);
+        return response.id;
     } catch (error) {
         console.error("Error adding food:", error);
     }
 };
+  
 
-export const addNewFood = async (newFood) => {
+  export const addNewFood = async (newFood) => {
     try {
-        const response = await fetch(`https://two024-ranchoaparte-back.onrender.com/Food_log`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify( {
-                "name": newFood.name,
-                "calories_portion": Number(newFood.calories),
-                "measure": newFood.measure,
-                "measure_portion": Number(newFood.amount),
-                "carbohydrates_portion":  Number(newFood.carbohydrate),
-                "sodium_portion": Number(newFood.sodium),
-                "fats_portion": Number(newFood.fat),
-                "protein_portion": Number(newFood.protein)
-            }),
-            
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.detail || "Something went wrong");
-        }
-
-        console.log("Food added successfully:", data);
+      const token = await getIdToken();
+      if (!token) throw new Error('Token not found');
+    console.log("NEW FOOD DATA", newFood)
+      const response = await fetch(`${ruta}/Food_log/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: newFood.name,
+          calories_portion: Number(newFood.calories),
+          measure: newFood.measure,
+          measure_portion: Number(newFood.amount),
+          carbohydrates_portion: Number(newFood.carbohydrate),
+          sodium_portion: Number(newFood.sodium),
+          fats_portion: Number(newFood.fat),
+          protein_portion: Number(newFood.protein),
+          timeDay: newFood.timeday,
+        }),
+      });
+  
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || "Something went wrong");
+      return data;
     } catch (error) {
-        console.error("Error adding food:", error);
+      console.error("Error adding food:", error);
+      throw error;
     }
-};
+  };
+  
 
 export const deleteUserFood = async (doc_id) => {
 
     try {
-        await axios.delete(`https://two024-ranchoaparte-back.onrender.com/DeleteMealUser/${doc_id}`); // Adjust this based on your backend response structure
+        const token = await getIdToken()
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        await axios.delete(`${ruta}/DeleteMealUser/${doc_id}`,{
+            headers: { Authorization: `Bearer ${token}` }
+        }); // Adjust this based on your backend response structure
     } catch (error) {
         console.error('Error fetching food by ID:', error);
         return null; // Return null or handle the error as needed
@@ -171,9 +351,12 @@ export const deleteUserFood = async (doc_id) => {
 
 
 export const editUserFood = async (doc_id,data) => {
-
     try {
-        await axios.put(`https://two024-ranchoaparte-back.onrender.com/UpdateUserFood/${doc_id}`,data); // Adjust this based on your backend response structure
+        const token = await getIdToken()
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        await axios.put(`${ruta}/UpdateUserFood/${doc_id}`,data);
     } catch (error) {
         console.error('Error fetching food by ID:', error);
         return null; // Return null or handle the error as needed
@@ -181,10 +364,17 @@ export const editUserFood = async (doc_id,data) => {
 };
 
 export const getCategories = async()=>{
-    const uid=auth.currentUser.uid
     try {
-        const response = await axios.get(`https://two024-ranchoaparte-back.onrender.com/GetCategoryUser/${uid}`);
-        return response.data.message.categories; // Adjust this based on your backend response structure
+        const token = await getIdToken()
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        const response=await axios.get(`${ruta}/GetCategoryUser`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          
+        return response.data.message.categories;
     } catch (error) {
         console.error('Error fetching categories :', error);
         return null; // Return null or handle the error as needed
@@ -192,9 +382,8 @@ export const getCategories = async()=>{
 }
 
 export const getDefaultCategories = async () => {
-    const uid = auth.currentUser.uid;
     try {
-        const response = await axios.get(`https://two024-ranchoaparte-back.onrender.com/GetCategoryUser/default`);
+        const response = await axios.get(`${ruta}/GetDefaultCategory`);
         return response.data.message.categories; // Adjust this based on your backend response structure
     } catch (error) {
         console.error('Error fetching default categories:', error);
@@ -203,6 +392,7 @@ export const getDefaultCategories = async () => {
 };
 
 export const getBarCategory = async () => {
+    
     try {
         const defaultCategories = await getDefaultCategories();
         console.log('Default Categories:', defaultCategories); // Log all categories
@@ -221,39 +411,56 @@ export const getBarCategory = async () => {
 
 
 
-export const createCategory =async (data)=>{
-    const uid=auth.currentUser.uid
-    try{
-        const response = await axios.post(`https://two024-ranchoaparte-back.onrender.com/CreateCategory/`, {...data,id_User: uid });
-        return response.data
-    }catch(error){
-        console.error('Error adding new category: ', error);
-        return null;
+export const createCategory = async (data) => {
+    try {
+      const token = await getIdToken();
+      if (!token) throw new Error('Token not found');
+     const { id_User, ...payload } = data;
+  
+      console.log("category data to send", payload);
+  
+      const response = await axios.post(`${ruta}/CreateCategory`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+  
+      return response.data;
+    } catch (error) {
+      console.error('Error adding new category: ', error);
+      return null;
     }
-}
+  };
+  
 
 export const updateCategory=async(data,category_id)=>{
-    try{
-        const response = await axios.put(`https://two024-ranchoaparte-back.onrender.com/UpdateCategory/${category_id}`,{...data,id_User: auth.currentUser.uid });
-        return response.data
-    }catch(error){
-        console.error('Error updating category by id: ', error);
-        return null;
+    try {
+        const token = await getIdToken()
+        console.log("ACTUALIZAR CAT",data)
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        const response = await axios.put(`${ruta}/UpdateCategory/${category_id}`, data);
+        
+        return response.data; // Adjust this based on your backend response structure
+    } catch (error) {
+        console.error('Error editing category:', error);
+        return null; // Return null or handle the error as needed
     }
 }
-export const updateCategoryDefault=async(data,category_id)=>{
-    try{
-        const response = await axios.put(`https://two024-ranchoaparte-back.onrender.com/UpdateCategory/${category_id}`,{...data,id_User: 'default' });
-        return response.data
-    }catch(error){
-        console.error('Error updating category by id: ', error);
-        return null;
-    }
-}
+// export const updateCategoryDefault=async(data,category_id)=>{
+//     try{
+//         const response = await axios.put(`${ruta}/UpdateCategory/${category_id}`,{...data,id_User: 'default' });
+//         return response.data
+//     }catch(error){
+//         console.error('Error updating category by id: ', error);
+//         return null;
+//     }
+// }
 
 export const deleteCategory=async(category_id)=>{
     try {
-        await axios.delete(`https://two024-ranchoaparte-back.onrender.com/DeleteCategory/${category_id}`); 
+        await axios.delete(`${ruta}/DeleteCategory/${category_id}`,{
+            headers: { Authorization: `Bearer ${await getIdToken()}` }
+        }); 
     } catch (error) {
         console.error('Error deleting category by ID:', error);
         return null; 
@@ -262,49 +469,44 @@ export const deleteCategory=async(category_id)=>{
 
 export const createTotCal = async (data, date) => {
     try {
-        const validDate = date instanceof Date && !isNaN(date) ? date.toISOString() : new Date().toISOString(); // Fallback to current date if invalid
-        console.log("LO QUE LLEGA AL TOT CAL ", data)
-        const response = await fetch(`https://two024-ranchoaparte-back.onrender.com/CreateTotCaloriesUser/`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                "id_user": auth.currentUser.uid,
-                "day": validDate, // Using the valid date here
-                "totCal": data.calories,
-                "totProt": data.protein,
-                "totSodium": data.sodium,
-                "totCarbs": data.carbs,
-                "totFats": data.fat,
-            }),
-        });
-
-        // Await response.json() before referencing 'data'
-        const responseData = await response.json();
-
-        if (!response.ok) {
-            throw new Error(responseData.detail || "Something went wrong");
-        }
-
-        console.log("Calories entry added successfully:", responseData);
-        return responseData;
+      const token = await getIdToken();
+      if (!token) throw new Error('Token not found');
+  
+      const validDate = date instanceof Date && !isNaN(date) ? date.toISOString() : new Date().toISOString();
+  
+      const response = await fetch(`${ruta}/CreateTotCaloriesUser/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          day: validDate,
+          totCal: data.calories,
+          totProt: data.protein,
+          totSodium: data.sodium,
+          totCarbs: data.carbs,
+          totFats: data.fat
+        }),
+      });
+  
+      const responseData = await response.json();
+      if (!response.ok) throw new Error(responseData.detail || "Something went wrong");
+      return responseData;
     } catch (error) {
-        console.error("Error adding calories entry:", error);
-        return null;
+      console.error("Error adding calories entry:", error);
+      throw error;
     }
-};
+  };
+  
 
 
 
 export const UpdateTotCal = async (totcal_id, data, date) => {
     try {
-        // Ensure the date is in the correct format
-        const validDate = date instanceof Date && !isNaN(date) ? date.toISOString() : new Date().toISOString(); // Fallback to current date if invalid
 
-        // Prepare payload matching backend expectations
+        const validDate = date instanceof Date && !isNaN(date) ? date.toISOString() : new Date().toISOString();
         const payload = {
-            id_user: auth.currentUser.uid,
             day: validDate,   // Using "day" instead of "date" to match the model
             totCal: data.calories,
             totProt: data.protein,
@@ -316,7 +518,7 @@ export const UpdateTotCal = async (totcal_id, data, date) => {
         console.log("Payload:", payload); // Log to confirm structure before sending
 
         // Send the request
-        await axios.put(`https://two024-ranchoaparte-back.onrender.com/UpdateTotCaloriesUser/${totcal_id}`, payload); 
+        await axios.put(`${ruta}/UpdateTotCaloriesUser/${totcal_id}`, payload); 
     } catch (error) {
         console.error('Error updating total calories:', error);
         return null; // Return null or handle the error as needed
@@ -324,28 +526,15 @@ export const UpdateTotCal = async (totcal_id, data, date) => {
 };
 
 export const fetchTotCalByDay = async (date) => {
-    const userTotCal = await getTotCalUser(); // Wait for the promise to resolve
-    
-    if (!userTotCal) return []; // Handle if there's no data
+    const isoDate = date.toISOString().split("T")[0];
+    console.log("ISO DATE", isoDate)
 
-    // Filter the food based on the provided date
-    const filteredTotcal = userTotCal.filter(doc => {
-        let ingestedDate;
-        if (doc.day.seconds) {
-            ingestedDate = new Date(doc.day.seconds * 1000); // Convert timestamp to Date
-        } else {
-            ingestedDate = new Date(doc.day); // If it's a string, it will handle conversion
-        }
-
-        return (
-            ingestedDate.getDate() === date.getDate() &&
-            ingestedDate.getMonth() === date.getMonth() &&
-            ingestedDate.getFullYear() === date.getFullYear()
-        );
+    const response = await axios.get(`${ruta}/getTotCalDay/${isoDate}`, {
+        headers: { Authorization: `Bearer ${await getIdToken()}` }
     });
+    console.log("Filtered User cals by date:", response.message);
 
-    console.log("Filtered User cals by date:", filteredTotcal);
-    return filteredTotcal;
+    return await response.data.message;
 };
 
 export const getCategoriesAndDefaults = async () => {
@@ -419,7 +608,7 @@ export const getCaloriesByCategories= ( userCalories, categories, foods, barFood
 export const getTotCalUser=async()=>{
     const uid=auth.currentUser.uid
     if(uid){try {
-        const response = await axios.get(`https://two024-ranchoaparte-back.onrender.com/GetTotCalUser/${uid}`);
+        const response = await axios.get(`${ruta}/GetTotCalUser`);
         return response.data.message.totCals; // Adjust this based on your backend response structure
     } catch (error) {
         console.error('Error fetching categories :', error);
@@ -517,19 +706,19 @@ export const getProdByID= async(prod_id)=>{
     const food=response.data.product
     return food
 }
-
-
-// things that need to be deployed
 export const createplate = async (selection) => {
     try {
+        const token = await getIdToken();
+        if (!token) throw new Error('Token not found');
+  
         console.log("PLATO", selection)
-        const response = await fetch("https://two024-ranchoaparte-back.onrender.com/CreatePlate/", {
+        const response = await fetch(`${ruta}/CreatePlate/`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
             },
             body: JSON.stringify( {
-                "id_User": auth.currentUser.uid,
                 "ingredients": selection.ingredients,
                 "name": selection.name,
                 "calories_portion": selection?.calories_portion || 0,
@@ -539,7 +728,8 @@ export const createplate = async (selection) => {
                 "fats_portion": selection?.fats_portion || 0,
                 "image": selection.image,
                 "public": selection.public,
-                "verified": selection.verified
+                "verified": selection.verified,
+                "timeDay": selection.timeday,
             }),
             
         });
@@ -568,7 +758,7 @@ export const getUserPlates = async () => {
     }
     const uid = user.uid;
     try {
-        const response = await axios.get(`https://two024-ranchoaparte-back.onrender.com/GetPlatesUser/${uid}`);
+        const response = await axios.get(`${ruta}/GetPlatesUser/`);
         return response.data.message.Plates; // Adjust this based on your backend response structure
     } catch (error) {
         console.error('Error fetching plates :', error);
@@ -577,8 +767,8 @@ export const getUserPlates = async () => {
 };
 export const updatePlate=async(data,plate_id)=>{
     try{
-        console.log("PLATO",data)
-        const response = await axios.put(`https://two024-ranchoaparte-back.onrender.com/UpdatePlate/${plate_id}`,{...data,id_User: auth.currentUser.uid });
+        console.log("PLATO ACTUALIZAR",data)
+        const response = await axios.put(`${ruta}/UpdatePlate/${plate_id}`,{...data,id_User: auth.currentUser.uid });
         return response.data
     }catch(error){
         console.error('Error updating plate by id: ', error);
@@ -587,21 +777,23 @@ export const updatePlate=async(data,plate_id)=>{
 }
 export const deleteplate=async(plate_id)=>{
     try {
-        await axios.delete(`https://two024-ranchoaparte-back.onrender.com/DeletePlate/${plate_id}`); 
+        await axios.delete(`${ruta}/DeletePlate/${plate_id}`,{
+            headers: { Authorization: `Bearer ${await getIdToken()}` } 
+        }); 
     } catch (error) {
         console.error('Error deleting plate by ID:', error);
         return null; 
     }
 }
+// BEBIDAS
 export const fechDrinkTypes = async () =>{
     const user = auth.currentUser;
     if (!user) {
         console.error("User is not authenticated");
         return null;
     }
-    const uid = user.uid;
     try {
-        const response = await axios.get(`https://two024-ranchoaparte-back.onrender.com/getUserDrinkType/${uid}`);
+        const response = await axios.get(`${ruta}/getUserDrinkType/`);
         return response.data.message.drinkType; // Adjust this based on your backend response structure
     } catch (error) {
         console.error('Error fetching typedrinks :', error);
@@ -610,14 +802,15 @@ export const fechDrinkTypes = async () =>{
 }
 export const createDrinkType = async (selection) => {
     try {
-        const response = await fetch('https://two024-ranchoaparte-back.onrender.com/drinkType_log', {
+
+        const response = await fetch(`${ruta}/drinkType_log`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
+                "authorization": `Bearer ${await getIdToken()}`
             },
             body: JSON.stringify( {
                 "name": selection.name,
-                "id_user": auth.currentUser.uid,
             }),
             
         });
@@ -645,7 +838,7 @@ export const getUserDrinks = async () =>{
     }
     const uid = user.uid;
     try {
-        const response = await axios.get(`https://two024-ranchoaparte-back.onrender.com/GetDrinks/${uid}`);
+        const response = await axios.get(`${ruta}/GetDrinks/`);
         return response.data.message.Drinks; // Adjust this based on your backend response structure
     } catch (error) {
         console.error('Error fetching typedrinks :', error);
@@ -654,11 +847,13 @@ export const getUserDrinks = async () =>{
 }
 export const createDrink = async (selection) => {
     try {
-        console.log(selection)
-        const response = await fetch('https://two024-ranchoaparte-back.onrender.com/drink_log', {
+        const token = await getIdToken();
+        if (!token) throw new Error('Token not found');
+        const response = await fetch(`${ruta}/drink_log`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
             },
             body: JSON.stringify( {
                 "name": selection.name,
@@ -668,19 +863,15 @@ export const createDrink = async (selection) => {
                 "measure": selection.measure,
                 "measure_portion": selection.measure_portion,
                 "typeOfDrink": selection.typeOfDrink,
-                "id_User": auth.currentUser.uid,
             }),
             
         });
 
         const data = await response.json();
-
         if (!response.ok) {
             throw new Error(data.detail || "Something went wrong");
             
         }
-        
-
         console.log("drink entry added successfully:", data);
         return response.data.message.drinkType_id;
     } catch (error) {
@@ -691,7 +882,7 @@ export const createDrink = async (selection) => {
 export const deleteDrink=async(drink_id)=>{
     try {
         console.log(drink_id)
-        await axios.delete(`https://two024-ranchoaparte-back.onrender.com/DeleteDrink/${drink_id}`); 
+        await axios.delete(`${ruta}/DeleteDrink/${drink_id}`); 
     } catch (error) {
         console.error('Error deleting plateFood by ID:', error);
         return null; 
@@ -701,7 +892,7 @@ export const updateDrink = async (doc_id,data) => {
 
     try {
         console.log(doc_id,data)
-        await axios.put(`https://two024-ranchoaparte-back.onrender.com/UpdateDrink/${doc_id}`,{...data,id_User: auth.currentUser.uid }); // Adjust this based on your backend response structure
+        await axios.put(`${ruta}/UpdateDrink/${doc_id}`,{...data}); // Adjust this based on your backend response structure
     } catch (error) {
         console.error('Error updating drink by ID:', error);
         return null; // Return null or handle the error as needed
@@ -709,21 +900,21 @@ export const updateDrink = async (doc_id,data) => {
 };
 export const deleteDrinkType = async (doc_id) => {
     try {
-        await axios.delete(`https://two024-ranchoaparte-back.onrender.com/DeleteDrinkType/${doc_id}`); // Adjust this based on your backend response structure
+        await axios.delete(`${ruta}/DeleteDrinkType/${doc_id}`); // Adjust this based on your backend response structure
     } catch (error) {
         console.error('Error deleting drinktype by ID:', error);
         return null; // Return null or handle the error as needed
     }
 };
 export const getDrinkByID = async (drink_id) => {
-    const response = await axios.get(`https://two024-ranchoaparte-back.onrender.com/DrinkById/${drink_id}`);
+    const response = await axios.get(`${ruta}/DrinkById/${drink_id}`);
     const drink=response.data.message.drink
     console.log("drink", drink)
     return drink
 
 }
 export const getPlate_ByID = async (plate_id) => {
-    const response = await axios.get(`https://two024-ranchoaparte-back.onrender.com/GetPlateByID/${plate_id}`);
+    const response = await axios.get(`${ruta}/GetPlateByID/${plate_id}`);
     const drink=response.data.message.plate
     console.log("PLATOOOOOOOOOO", drink)
     return drink
@@ -731,19 +922,19 @@ export const getPlate_ByID = async (plate_id) => {
 }
 
 export const getGroupedDrinkTypes = async () => {
-    const response = await axios.get(`https://two024-ranchoaparte-back.onrender.com/getUserGroupDrinkType/${auth.currentUser.uid}`);
+    const response = await axios.get(`${ruta}/getUserGroupDrinkType/`);
     const drink=response.data.Drinks
     return drink
 
 }
 
 export const getPublicPlates = async () => {
-    const response = await axios.get(`https://two024-ranchoaparte-back.onrender.com/GetPlatePublicPlates/`)
+    const response = await axios.get(`${ruta}/GetPlatePublicPlates/`)
     const plates = response.data.Plates
     return plates
 }
 export const PlateReviews = async () => {
-    const response = await axios.get(`https://two024-ranchoaparte-back.onrender.com/PlateReviews/`)
+    const response = await axios.get(`${ruta}/PlateReviews/`)
     const review = response.data.Review
     return review
 }
@@ -751,7 +942,7 @@ export const PlateReviews = async () => {
 export const updateComments = async (doc_id, data) => {
     try {
         console.log("Updating comments:", { doc_id, data });
-        const response = await axios.put(`https://two024-ranchoaparte-back.onrender.com/UpdateReview/${doc_id}`, data); // Check if you need {...data}
+        const response = await axios.put(`${ruta}/UpdateReview/${doc_id}`, data); // Check if you need {...data}
         
         // Log the response from the server
         console.log("Server response:", response.data);
@@ -765,11 +956,14 @@ export const updateComments = async (doc_id, data) => {
 };
 export const createReview = async (selection) => {
     try {
+        const token = await getIdToken();
+        if (!token) throw new Error('Token not found');
         console.log(selection)
-        const response = await fetch('https://two024-ranchoaparte-back.onrender.com/newReview', {
+        const response = await fetch(`${ruta}/newReview`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
+                "authorization": `Bearer ${token}`
             },
             body: JSON.stringify( {
                 "plate_Id": selection.id_plate,
@@ -796,21 +990,19 @@ export const createReview = async (selection) => {
 };
 
 export const getstreak = async () => {
-    const user_id  = auth.currentUser.uid
-    const response = await axios.get(`https://two024-ranchoaparte-back.onrender.com/Streak/${user_id}`,)
+    const response = await axios.get(`${ruta}/Streak/`,)
     const streak = response.data.message
     return streak
 }
 export const getUserNotification = async () => {
-    const user_id  = auth.currentUser.uid
-    const response = await axios.get(`https://two024-ranchoaparte-back.onrender.com/getUserNotifications/${user_id}`,)
+    const response = await axios.get(`${ruta}/getUserNotifications/`,)
     const notifications = response.data.notifications
     return notifications
 }
 export const markNotificationAsRead = async (doc_id) => {
     try {
         console.log("Updating comments:", { doc_id });
-        const response = await axios.put(`https://two024-ranchoaparte-back.onrender.com/markNotificationAsRead/${doc_id}`); // Check if you need {...data}
+        const response = await axios.put(`${ruta}/markNotificationAsRead/${doc_id}`); // Check if you need {...data}
         
         console.log("Server response:", response);
 
@@ -822,15 +1014,106 @@ export const markNotificationAsRead = async (doc_id) => {
     }
 };
 export const getPlatesNotUser = async () => {
-    const user_id  = auth.currentUser.uid
-    const response = await axios.get(`https://two024-ranchoaparte-back.onrender.com/PublicplatesNotFromUser/${user_id}`,)
+    const response = await axios.get(`${ruta}/PublicplatesNotFromUser/`,)
     const plates = response.data.Plates
     return plates
 }
 export const addGoal = async (goal_id) => {
-    const user_id = auth.currentUser.uid;
-    const response = await axios.get(`https://two024-ranchoaparte-back.onrender.com/addGoal/${user_id}`, {
-        params: { goal_id }
-    });
+    try {
+        const token = await getIdToken()
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        const response=await axios.post(`${ruta}/addGoal`, 
+        { achivement_id: goal_id }, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+    
     return response;
+    }catch (error) {return null;}
 }
+
+///FINAL
+export const getRecomendations = async (timeDay) => {
+    try {
+        const token = await getIdToken()
+        console.log("TIME OF DAY",timeDay)
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        const response=await axios.get(`${ruta}/getRecomendations/${timeDay}`, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    
+    return response.data;
+    }catch (error) {
+        console.error('Error fetching recomendations :', error);
+        return null; // Return null or handle the error as needed
+    }
+}
+
+export const getDailyMenu = async (day) => {
+    try {
+        const token = await getIdToken()
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        const response=await axios.get(`${ruta}/getOrbuildDailyMenu/${day}`, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    
+    return response.data;
+    }catch (error) {
+        console.error('Error fetching daily menu :', error);
+        return null; // Return null or handle the error as needed
+    }
+}
+export const updateWeeklyPlan = async (data) => {
+    try {
+        const token = await getIdToken()
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        const startDate = data.week_start;
+        const response=await axios.patch(`${ruta}/weekly-plan/${startDate}`, data,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    
+    return response.data;
+    }catch (error) {
+        console.error('Error updating weekly plan :', error);
+        return null; // Return null or handle the error as needed
+    }
+}
+export const getWeeklyPlan = async (week_start) => {
+    try {
+        const token = await getIdToken()
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        const response=await axios.get(`${ruta}/weekly-plan/${week_start}`, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    
+    return response.data;
+    }catch (error) {
+        console.error('Error fetching weekly plan :', error);
+        return null; // Return null or handle the error as needed
+    }
+}
+export const getShoppingList = async (week_start) => {
+    try {
+        const token = await getIdToken()
+        if( !token){
+            throw new Error ('Token not found')
+        }
+        const response=await axios.get(`${ruta}/shoppingList/${week_start}`, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    
+    return response.data;
+    }catch (error) {
+        console.error('Error fetching shopping list :', error);
+        return null; // Return null or handle the error as needed
+    }}

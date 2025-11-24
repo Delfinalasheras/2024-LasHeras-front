@@ -19,10 +19,22 @@ const NewPlate = ({ foodData, setPlates, plates }) => {
   const [image, setImage] = useState(null);
   const fileInputRef = useRef(null);
   const [publicPlate, setPublicPlate]=useState(false)
+  const [timeDay, setTimeDay] = useState([]); // NUEVO: Estado para time of day
 
   // Function to handle adding/removing food items
   const handleImageChange = (e) => {
     setImage(e.target.files[0]);
+  };
+
+  // NUEVO: Función para toggle time of day
+  const toggleTimeDay = (value) => {
+    setTimeDay(prev => {
+      if (prev.includes(value)) {
+        return prev.filter(v => v !== value);
+      } else {
+        return [...prev, value];
+      }
+    });
   };
 
   useEffect(()=>{
@@ -74,6 +86,11 @@ const createPlate = async () => {
     setMessage("Please select the food you want to include");
     return;
   }
+  // NUEVO: Validación de time of day
+  if (timeDay.length === 0) {
+    setMessage("Please select at least one meal time");
+    return;
+  }
 
   try {
     const user= await fetchUser()
@@ -100,10 +117,11 @@ const createPlate = async () => {
       carbohydrates_portion: totals.carbohydrates,
       protein_portion: totals.protein,
       verified: user.validation,
+      timeday: timeDay, // NUEVO: Incluir timeday en los datos
     };
 
     // Update the UI without refreshing the page
-    const newPlates=plates.concat({ name: plateName, ingredients: ingredientsArray, calories_portion: totals.calories, sodium_portion: totals.sodium, carbohydrates_portion: totals.carbohydrates, protein_portion: totals.protein, fats_portion:  totals.fats, image: imageUrl,public:publicPlate,verified: user.validation  })
+    const newPlates=plates.concat({ name: plateName, ingredients: ingredientsArray, calories_portion: totals.calories, sodium_portion: totals.sodium, carbohydrates_portion: totals.carbohydrates, protein_portion: totals.protein, fats_portion:  totals.fats, image: imageUrl,public:publicPlate,verified: user.validation, timeday: timeDay  })
     plateAchivements(newPlates.length)
     setPlates(newPlates);
 
@@ -120,6 +138,7 @@ const createPlate = async () => {
     setSearch('')
     setSelectedFoods([]);
     setImage(null); // Clear the selected image
+    setTimeDay([]); // NUEVO: Limpiar timeDay
     setReset(true);
 
     // Reset message after 3 seconds
@@ -202,18 +221,63 @@ const savePlate = async () => {
           />
         ))}
       </div>
-      <div className="flex justify-center items-center sticky mt-2 bottom-0 w-full py-2 cursor-pointer bg-healthyGreen">
-        <button
-          className="font-quicksand text-white font-bold text-sm"
-          onClick={savePlate}
-        >
-          Save changes
-        </button>
+
+      {/* NUEVO: Sección de Time of Day - sticky en la parte inferior */}
+      <div className="sticky bottom-0 w-full bg-white border-t-2 border-healthyGreen pt-2 pb-2 px-2">
+        <p className='text-healthyDarkGreen font-semibold font-quicksand text-xs mb-1.5 text-center'>Meal time:</p>
+        <div className='flex gap-1 justify-center mb-2'>
+          <label className='flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-gray-300 hover:border-healthyGreen cursor-pointer transition-all text-xs whitespace-nowrap'>
+            <input
+              type="checkbox"
+              checked={timeDay.includes(1)}
+              onChange={() => toggleTimeDay(1)}
+              className='w-3 h-3 text-healthyGreen focus:ring-healthyGreen'
+            />
+            <span className='font-medium text-[10px]'>Desayuno</span>
+          </label>
+
+          <label className='flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-gray-300 hover:border-healthyGreen cursor-pointer transition-all text-xs whitespace-nowrap'>
+            <input
+              type="checkbox"
+              checked={timeDay.includes(2)}
+              onChange={() => toggleTimeDay(2)}
+              className='w-3 h-3 text-healthyGreen focus:ring-healthyGreen'
+            />
+            <span className='font-medium text-[10px]'>Almuerzo</span>
+          </label>
+
+          <label className='flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-gray-300 hover:border-healthyGreen cursor-pointer transition-all text-xs whitespace-nowrap'>
+            <input
+              type="checkbox"
+              checked={timeDay.includes(3)}
+              onChange={() => toggleTimeDay(3)}
+              className='w-3 h-3 text-healthyGreen focus:ring-healthyGreen'
+            />
+            <span className='font-medium text-[10px]'>Snack</span>
+          </label>
+
+          <label className='flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-gray-300 hover:border-healthyGreen cursor-pointer transition-all text-xs whitespace-nowrap'>
+            <input
+              type="checkbox"
+              checked={timeDay.includes(4)}
+              onChange={() => toggleTimeDay(4)}
+              className='w-3 h-3 text-healthyGreen focus:ring-healthyGreen'
+            />
+            <span className='font-medium text-[10px]'>Cena</span>
+          </label>
+        </div>
+
+        <div className="flex justify-center items-center w-full cursor-pointer bg-healthyGreen rounded-md">
+          <button
+            className="font-quicksand text-white font-bold text-sm py-2"
+            onClick={savePlate}
+          >
+            Save changes
+          </button>
+        </div>
       </div>
     </div>
   );
 };
 
 export default NewPlate;
-
-

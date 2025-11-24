@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import Input from '../../../components/Input';
-import {handleInputChange, handleInputChange2} from '../../inputValidation';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faCookieBite } from '@fortawesome/free-solid-svg-icons'; 
+import { handleInputChange, handleInputChange2 } from '../../inputValidation';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCookieBite } from '@fortawesome/free-solid-svg-icons';
 
-const NewFood = ({ setAddFood, setNewFood}) => {
+const NewFood = ({ setAddFood, setNewFood }) => {
     const [inValidation, setInValidation] = useState(false);
     const [name, setName] = useState('');
     const [measure, setMeasure] = useState('');
@@ -13,24 +13,41 @@ const NewFood = ({ setAddFood, setNewFood}) => {
     const [sodium, setSodium] = useState('');
     const [carbohydrate, setCarbohydrate] = useState('');
     const [fat, setFat] = useState('');
-    const [protein, setProtein]=useState('')
+    const [protein, setProtein] = useState('');
+    const [timeDay, setTimeDay] = useState([]);
 
 
+    const toggleTimeDay = (value) => {
+        setTimeDay(prev => {
+            if (prev.includes(value)) {
+                return prev.filter(v => v !== value);
+            } else {
+                return [...prev, value];
+            }
+        });
+    };
+    
+    // Updated: Only validate required fields (name, measure, amount > 0, calories > 0)
     const validateInputs = () => {
         return (
-            name !== '' &&
-            measure !== '' 
+            name.trim() !== '' &&
+            measure.trim() !== '' &&
+            amount > 0 &&
+            calories > 0 &&
+            timeDay.length > 0
         );
     };
+    
+    
 
-    const handleCaloriesChange= (e) => {
+    const handleCaloriesChange = (e) => {
         handleInputChange2(parseInt(e.target.value), 0, 500, setCalories);
-    }
+    };
 
     const save = () => {
         if (validateInputs()) {
             setInValidation(false);
-            setNewFood({ name, measure, amount, calories, sodium, carbohydrate, fat, protein });
+            setNewFood({ name, measure, amount, calories, sodium, carbohydrate, fat, protein,timeday: timeDay });
             setName('');
             setMeasure('');
             setAmount('');
@@ -38,8 +55,9 @@ const NewFood = ({ setAddFood, setNewFood}) => {
             setSodium('');
             setCarbohydrate('');
             setFat('');
-            setProtein('')
+            setProtein('');
             setAddFood(false);
+            setTimeDay([]);
         } else {
             setInValidation(true);
         }
@@ -56,7 +74,7 @@ const NewFood = ({ setAddFood, setNewFood}) => {
                 <div className='flex flex-col md:flex-row w-full items-start justify-start sm:h-full max-h-84 overflow-y-scroll'>
                     <div className='flex-1 pb-0 px-2 sm:p-2 rounded-md w-full md:w-1/2 flex flex-col '>
                         <div className='flex flex-col w-full mb-2'>
-                        <p className='text-black font-semibold font-quicksand text-sm'>Name</p>
+                            <p className='text-black font-semibold font-quicksand text-sm'>Name</p>
                             <input
                                 required={inValidation && name === ''}
                                 className='bg-white rounded-md text-left text-darkGray text-sm p-1 focus:outline-none  py-2 px-3 focus:ring-2 focus:ring-healthyGreen'
@@ -68,8 +86,10 @@ const NewFood = ({ setAddFood, setNewFood}) => {
                             />
                             {inValidation && name === '' && <p className='text-red-500 text-xs'>Name is required.</p>}
                         </div>
+
+
                         <div className='flex flex-col w-full mb-2'>
-                        <p className='text-black font-semibold font-quicksand text-sm'>Measure</p>
+                            <p className='text-black font-semibold font-quicksand text-sm'>Measure</p>
                             <input
                                 required={inValidation && measure === ''}
                                 className='bg-white rounded-md text-left text-darkGray text-sm p-1 focus:outline-none  py-2 px-3 focus:ring-2 focus:ring-healthyGreen'
@@ -90,11 +110,10 @@ const NewFood = ({ setAddFood, setNewFood}) => {
                                 value={amount} 
                                 onChange={(e)=> handleInputChange(e.target.value, 0, 1000, setAmount)}
                             />
-                        
                             {inValidation && amount <= 0 && <p className='text-red-500 text-xs'>Amount must be a positive number.</p>}
                         </div>
                         <div className='flex flex-col w-full mb-2 sm:mb-0'>
-                        <p className='text-black font-quicksand  font-semibold text-sm'>Calories</p>
+                            <p className='text-black font-quicksand  font-semibold text-sm'>Calories</p>
                             <input
                                 required={inValidation && calories <= 0}
                                 label="Calories"
@@ -109,55 +128,103 @@ const NewFood = ({ setAddFood, setNewFood}) => {
                     </div>
                     <div className='flex-1 pt-0 px-2 sm:p-2 rounded-md w-full md:w-1/2 flex flex-col justify-start '>
                         <div className='flex flex-col w-full mb-2'>
-                        <p className='text-black font-quicksand  font-semibold text-sm'>Sodium</p>
+                            <p className='text-black font-quicksand  font-semibold text-sm'>Sodium</p>
                             <input
-                                required={inValidation && sodium <= 0}
                                 placeholder="448"
                                 value={sodium}
                                 className='bg-white rounded-md text-left text-darkGray text-sm p-1 focus:outline-none  py-2 px-3 focus:ring-2 focus:ring-healthyGreen'
                                 inputType='number'
                                 onChange={(e)=> handleInputChange(e.target.value, 0, 1000, setSodium)}
                             />
-                            {inValidation && sodium <= 0 && <p className='text-red-500 text-xs'>Sodium must be a positive number.</p>}
+                            {/* Removed: Error message for sodium (not required, 0 allowed) */}
                         </div>
                         <div className='flex flex-col w-full mb-2 '>
-                        <p className='text-black font-quicksand font-semibold text-sm'>Carbohidrates</p>
+                            <p className='text-black font-quicksand font-semibold text-sm'>Carbohidrates</p>
                             <input
-                                required={inValidation && carbohydrate <= 0}
                                 label="Carbohydrate"
                                 placeholder="448"
-                                className='bg-white rounded-md text-left text-darkGray text-sm p-1 focus:outline-none  py-2 px-3 focus:ring-2 focus:ring-healthyGreen'
                                 value={carbohydrate}
+                                className='bg-white rounded-md text-left text-darkGray text-sm p-1 focus:outline-none  py-2 px-3 focus:ring-2 focus:ring-healthyGreen'
                                 inputType='number'
-                                onChange={(e)=> handleInputChange(parseInt(e.target.value), 0, 500, setCarbohydrate)}
+                                // Updated: Use handleInputChange for consistency (defaults to 0 if empty)
+                                onChange={(e)=> handleInputChange(e.target.value, 0, 1000, setCarbohydrate)}
                             />
-                            {inValidation && carbohydrate <= 0 && <p className='text-red-500 text-xs'>Carbohydrate must be a positive number.</p>}
+                            {/* Removed: Error message for carbohydrate (not required, 0 allowed) */}
                         </div>
                         <div className='flex flex-col w-full mb-2'>
-                        <p className='text-black font-quicksand  font-semibold text-sm'>Fats</p>
+                            <p className='text-black font-quicksand  font-semibold text-sm'>Fats</p>
                             <input
-                                required={inValidation && fat <= 0}
                                 label="Fat"
                                 className='bg-white rounded-md text-left text-darkGray text-sm p-1 focus:outline-none  py-2 px-3 focus:ring-2 focus:ring-healthyGreen'
                                 placeholder="448"
                                 value={fat}
                                 inputType='number'
-                                onChange={(e)=> handleInputChange(parseInt(e.target.value), 0, 500, setFat)}
+                                // Updated: Use handleInputChange for consistency (defaults to 0 if empty)
+                                onChange={(e)=> handleInputChange(e.target.value, 0, 1000, setFat)}
                             />
-                            {inValidation && fat <= 0 && <p className='text-red-500 text-xs'>Fat must be a positive number.</p>}
+                            {/* Removed: Error message for fat (not required, 0 allowed) */}
                         </div>
                         <div className='flex flex-col w-full mb-2'>
-                        <p className='text-black font-quicksand font-semibold text-sm'>Protein</p>
+                            <p className='text-black font-quicksand font-semibold text-sm'>Protein</p>
                             <input
-                                required={inValidation && protein <= 0}
                                 label="Protein"
                                 placeholder="448"
                                 className='bg-white rounded-md text-left text-darkGray text-sm p-1 focus:outline-none  py-2 px-3 focus:ring-2 focus:ring-healthyGreen'
                                 value={protein}
                                 inputType='number'
-                                onChange={(e)=> handleInputChange(parseInt(e.target.value), 0, 500, setProtein)}
+                                // Updated: Use handleInputChange for consistency (defaults to 0 if empty)
+                                onChange={(e)=> handleInputChange(e.target.value, 0, 1000, setProtein)}
                             />
-                            {inValidation && protein <= 0 && <p className='text-red-500 text-xs'>Protein must be a positive number.</p>}
+                            {/* Removed: Error message for protein (not required, 0 allowed) */}
+                        </div>
+                        <div className='flex flex-col w-full mb-2'>
+                            <p className='text-black font-semibold font-quicksand text-sm mb-2'>Time of Day</p>
+
+                            <div className='flex flex-wrap gap-3'>
+                                <label className='flex items-center gap-2 px-4 py-2 rounded-md bg-white border border-gray-300 hover:border-healthyGreen cursor-pointer transition-all'>
+                                    <input
+                                        type="checkbox"
+                                        checked={timeDay.includes(1)}
+                                        onChange={() => toggleTimeDay(1)}
+                                        className='w-4 h-4 text-healthyGreen focus:ring-healthyGreen'
+                                    />
+                                    <span className='font-medium text-sm'>Desayuno</span>
+                                </label>
+
+                                <label className='flex items-center gap-2 px-4 py-2 rounded-md bg-white border border-gray-300 hover:border-healthyGreen cursor-pointer transition-all'>
+                                    <input
+                                        type="checkbox"
+                                        checked={timeDay.includes(2)}
+                                        onChange={() => toggleTimeDay(2)}
+                                        className='w-4 h-4 text-healthyGreen focus:ring-healthyGreen'
+                                    />
+                                    <span className='font-medium text-sm'>Almuerzo</span>
+                                </label>
+
+                                <label className='flex items-center gap-2 px-4 py-2 rounded-md bg-white border border-gray-300 hover:border-healthyGreen cursor-pointer transition-all'>
+                                    <input
+                                        type="checkbox"
+                                        checked={timeDay.includes(3)}
+                                        onChange={() => toggleTimeDay(3)}
+                                        className='w-4 h-4 text-healthyGreen focus:ring-healthyGreen'
+                                    />
+                                    <span className='font-medium text-sm'>Snack</span>
+                                </label>
+
+                                <label className='flex items-center gap-2 px-4 py-2 rounded-md bg-white border border-gray-300 hover:border-healthyGreen cursor-pointer transition-all'>
+                                    <input
+                                        type="checkbox"
+                                        checked={timeDay.includes(4)}
+                                        onChange={() => toggleTimeDay(4)}
+                                        className='w-4 h-4 text-healthyGreen focus:ring-healthyGreen'
+                                    />
+                                    <span className='font-medium text-sm'>Cena</span>
+                                </label>
+                            </div>
+
+                            {inValidation && timeDay.length === 0 && (
+                                <p className='text-red-500 text-xs mt-2'>Elige al menos una opción.</p>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -178,9 +245,6 @@ const NewFood = ({ setAddFood, setNewFood}) => {
             </div>
         </div>
     );
-}
+};
 
 export default NewFood;
-
-
-

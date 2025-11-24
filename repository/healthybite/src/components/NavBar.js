@@ -23,13 +23,15 @@ function NavBar() {
                     {window.innerWidth > '768' ? 
                         <div className="flex justify-between items-center w-4/5 ">
                             <div className="flex justify-around items-center w-10/12 lg:w-3/4 ">
-                                <NavItem route='/' name='Home' icon={faHouse}  />
+                                <NavItem route='/Home' name='Home' icon={faHouse}  />
                                 <NavItem route='/plates' name='Plates' icon={faUtensils}/>
                                 <NavItem route='/drinks' name='Drinks' icon={faMugHot}/>
+                                <NavItem route='/Planner' name='Planner' icon={faStar}  />
                                 <NavItem route='/dashboard' name='Dashboard' icon={faChartLine}  />
                                 <NavItem route='/category' name='Category' icon={faLayerGroup}  />
                                 <NavItem route='/community' name='Community' icon={faComment}  />
                                 <NavItem route='/user-profile' name='User Profile' icon={faUser}  />
+                                
                                 
                             </div>
                             <div className="w-2/12  lg:w-1/4 flex justify-end items-center mr-4">
