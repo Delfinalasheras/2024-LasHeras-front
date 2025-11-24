@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheck, faCircleXmark, faXmark } from '@fortawesome/free-solid-svg-icons';
-import RecommendationItem from './RecomendationItem'; 
+import { faCheck, faCircleXmark, faXmark, faCirclePlus, faCircleCheck } from '@fortawesome/free-solid-svg-icons'; // Agregué faCircleCheck y faCirclePlus
 import { getWeeklyPlan, getDailyMenu } from '../../../firebaseService';
 import emptyPlate from '../../../assets/emptyPlate.png';
 import ProgressBar from '../../../components/ProgressBar';
+import RecommendationItem from './RecomendationItem';
 
-const DailyMenu = ({ setAddMeal, handleAddMeal, selection, setSelection, currentDate = new Date(), allFoods = [], allPlates = { mines: [], others: [] }, allDrinks = [] ,foodconsumed}) => {
+const DailyMenu = ({ setAddMeal, handleAddMeal, selection = [], setSelection, currentDate = new Date(), allFoods = [], allPlates = { mines: [], others: [] }, allDrinks = [] ,foodconsumed}) => {
     
     const [activeTab, setActiveTab] = useState('daily');
     const [userWeeklyPlan, setUserWeeklyPlan] = useState(null);
@@ -14,8 +14,6 @@ const DailyMenu = ({ setAddMeal, handleAddMeal, selection, setSelection, current
     const [dailyMenu, setDailyMenu] = useState(null); 
     const [loadingDaily, setLoadingDaily] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-
-//funciones
     const getStartOfWeek = (date) => {
         const d = new Date(date);
         const day = d.getDay();
@@ -28,7 +26,6 @@ const DailyMenu = ({ setAddMeal, handleAddMeal, selection, setSelection, current
         const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
         return days[date.getDay()];
     };
-
 
     const getFormattedDate = (date) => {
         return date.toISOString().split('T')[0];
@@ -46,11 +43,40 @@ const DailyMenu = ({ setAddMeal, handleAddMeal, selection, setSelection, current
         return found;
     };
 
+
+    const toggleSelection = (foodItem) => {
+
+        const currentSelection = Array.isArray(selection) ? selection : [];
+        const exists = currentSelection.find(item => item.id_food === foodItem.id);
+
+        if (exists) {
+
+            const newSelection = currentSelection.filter(item => item.id_food !== foodItem.id);
+            setSelection(newSelection);
+        } else {
+
+            const amount = foodItem.measure_portion || 1;
+            const itemToAdd = { 
+                id_food: foodItem.id, 
+                name: foodItem.name, 
+                amount, 
+                measure: foodItem.measure, 
+                carbohydrates_portion: foodItem.carbohydrates_portion,
+                fats_portion: foodItem.fats_portion, 
+                protein_portion: foodItem.protein_portion, 
+                sodium_portion: foodItem.sodium_portion
+            };
+            setSelection([...currentSelection, itemToAdd]);
+        }
+    };
+
+    const checkIsSelected = (id) => {
+        return Array.isArray(selection) && selection.some(s => s.id_food === id);
+    };
+
     useEffect(() => {
         const loadData = async () => {
-
             if (activeTab === 'planned') {
-
                 setLoadingPlan(true);
                 try {
                     const weekStart = getStartOfWeek(currentDate);
@@ -75,35 +101,33 @@ const DailyMenu = ({ setAddMeal, handleAddMeal, selection, setSelection, current
                 }
             }
         };
-
         loadData();
     }, [activeTab, currentDate]); 
 
-    const handleSingleClickAddMeal = async () => {
-        if (isSubmitting) return;
+    const handleBatchAddMeal = async () => {
+        if (isSubmitting || selection.length === 0) return;
         setIsSubmitting(true);
         try {
-            await handleAddMeal();
+
+            await handleAddMeal(selection);
+            setSelection([]); 
             setAddMeal(false);    
         } catch (error) {
-            console.error('Error adding meal:', error);
+            console.error('Error adding meals:', error);
         } finally {
             setIsSubmitting(false);
         }
     };
+
     const foodAlreadyConsumed = (foodconsumed, itemtocheck) => {
+        if(!foodconsumed) return false;
         for (const fooditem of foodconsumed) {
             const medida = itemtocheck.measure_portion ?? 1;
-    
-            if (
-                fooditem.id_Food === itemtocheck.id &&
-                fooditem.amount_eaten == medida
-            ) {
+            if (fooditem.id_Food === itemtocheck.id && fooditem.amount_eaten == medida) {
                 return true;
             }
         }
-    
-        return false; // 👉 se retorna false SOLO si recorrió todo y no encontró nada
+        return false;
     };
     
 
@@ -148,13 +172,15 @@ const DailyMenu = ({ setAddMeal, handleAddMeal, selection, setSelection, current
                     sodium_portion: (dbItem.sodium_portion || 0) * ratio,
                     name: planItem.name || dbItem.name 
                 };
-                const alreadyConsumed=foodAlreadyConsumed(foodconsumed, preparedItem)
+                const alreadyConsumed = foodAlreadyConsumed(foodconsumed, preparedItem);
+                const isSelected = checkIsSelected(preparedItem.id);
 
                 return (
                     <RecommendationItem 
                         key={`${mealType}-${index}`} 
                         food={preparedItem} 
-                        setSelection={setSelection} 
+                        toggleSelection={toggleSelection}
+                        isSelected={isSelected}
                         alredyconsumed={alreadyConsumed}
                     />
                 );
@@ -221,11 +247,14 @@ const DailyMenu = ({ setAddMeal, handleAddMeal, selection, setSelection, current
                             {items.map((obj, index) => {
                                 const foodItem = obj.item ? obj.item : obj; 
                                 const alreadyConsumed = foodAlreadyConsumed(foodconsumed, foodItem);
+                                const isSelected = checkIsSelected(foodItem.id);
+
                                 return (
                                     <RecommendationItem 
                                         key={`rec-${key}-${index}`} 
                                         food={foodItem} 
-                                        setSelection={setSelection} 
+                                        toggleSelection={toggleSelection}
+                                        isSelected={isSelected}
                                         alredyconsumed={alreadyConsumed}
                                     />
                                 );
@@ -244,7 +273,6 @@ const DailyMenu = ({ setAddMeal, handleAddMeal, selection, setSelection, current
         </div>
     );
 
-  
     const LoadingState = ({ message = "Loading..." }) => (
         <div className="flex flex-col items-center justify-center py-10">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-healthyOrange"></div>
@@ -255,7 +283,6 @@ const DailyMenu = ({ setAddMeal, handleAddMeal, selection, setSelection, current
     return (
         <div className="w-full h-screen absolute top-0 z-50 flex justify-center items-center bg-black/30 backdrop-blur-sm">
             <div className="w-11/12 sm:w-full max-w-[600px] bg-healthyGray rounded-2xl px-4 pt-4 pb-14 relative shadow-xl flex flex-col max-h-[85vh]">
-                {/* ... Header y Botón Cerrar siguen igual ... */}
                 <div className="w-full flex justify-between items-center mb-4">
                     <h2 className="text-xl font-quicksand font-bold text-healthyDarkGray1">
                         Menu & Plan
@@ -271,7 +298,6 @@ const DailyMenu = ({ setAddMeal, handleAddMeal, selection, setSelection, current
                         />
                     </button>
                 </div>
-
 
                 <div className='flex mb-4 bg-white/50 rounded-lg p-1'> 
                     <button 
@@ -296,46 +322,50 @@ const DailyMenu = ({ setAddMeal, handleAddMeal, selection, setSelection, current
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto pr-1 scrollbar-hide">
+                <div className="flex-1 overflow-y-auto pr-1 scrollbar-hide pb-16">
                     {activeTab === 'daily' ? renderDailyMenu() : renderMyPlan()}
                 </div>
 
-                {selection && (
-                    <div className="absolute bottom-4 left-0 w-full px-4 flex justify-between items-center animate-fade-in-up">
-                        {/* ... contenido del footer ... */}
-                         <div className="flex flex-1 flex-row items-center bg-white/90 backdrop-blur px-4 rounded-2xl py-2 shadow-lg border border-healthyOrange/20 mr-2 justify-between">
-                            <div className='flex flex-col sm:flex-row sm:items-center overflow-hidden w-full'>
-                                <p className="font-quicksand font-bold text-darkGray text-sm truncate mr-2">
-                                    {selection.name}
+                {/* FOOTER PARA MULTIPLE SELECCION */}
+                {selection && selection.length > 0 && (
+                    <div className="absolute bottom-4 left-0 w-full px-4 flex justify-between items-center animate-fade-in-up z-50">
+                         <div className="flex flex-1 flex-row items-center bg-white/90 backdrop-blur px-4 rounded-2xl py-2 shadow-lg border border-healthyOrange/20 mr-2 justify-between h-[52px]">
+                            <div className='flex flex-col overflow-hidden w-full'>
+                                <p className="font-quicksand font-bold text-darkGray text-sm truncate">
+                                    {selection.length} item{selection.length > 1 ? 's' : ''} selected
                                 </p>
-                                <span className="text-xs text-healthyGray1 font-semibold whitespace-nowrap">
-                                    ({Math.round(selection.amount * 100) / 100} {selection.measure})
-                                </span>
+                                {/* Opcional: Mostrar nombres cortados */}
+                                <p className="text-xs text-healthyGray1 font-semibold truncate w-full">
+                                    {selection.map(s => s.name).join(', ')}
+                                </p>
                             </div>
-                            <FontAwesomeIcon 
-                                icon={faXmark} 
-                                className="text-healthyGray1 hover:text-red-500 cursor-pointer ml-2 p-1" 
-                                onClick={() => setSelection(null)} 
-                            />
+                            <div 
+                                onClick={() => setSelection([])}
+                                className="ml-2 p-2 cursor-pointer hover:bg-gray-100 rounded-full transition-colors"
+                            >
+                                <FontAwesomeIcon 
+                                    icon={faXmark} 
+                                    className="text-healthyGray1 hover:text-red-500 text-lg" 
+                                />
+                            </div>
                         </div>
 
                         <button 
-                            onClick={handleSingleClickAddMeal} 
+                            onClick={handleBatchAddMeal} 
                             disabled={isSubmitting}
-                            className={`font-quicksand text-sm px-4 py-3 flex items-center rounded-xl shadow-lg transition-all ${
+                            className={`h-[52px] font-quicksand text-sm px-5 flex items-center rounded-xl shadow-lg transition-all ${
                                 isSubmitting 
                                     ? 'bg-healthyOrange/50 cursor-not-allowed' 
                                     : 'bg-healthyOrange hover:bg-healthyDarkOrange hover:scale-105'
                             } text-white font-bold whitespace-nowrap`}
                         >
                             <FontAwesomeIcon icon={faCheck} className="mr-2" />
-                            {isSubmitting ? '...' : 'Add'}
+                            {isSubmitting ? '...' : 'Add All'}
                         </button>
                     </div>
                 )}
             </div>
         </div>
     );
-};
-
+}
 export default DailyMenu;

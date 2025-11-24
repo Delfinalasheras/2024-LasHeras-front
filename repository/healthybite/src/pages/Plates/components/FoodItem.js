@@ -3,22 +3,15 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
 
 const FoodItem = ({ food, onFoodAdd, reset, onResetComplete, selectedFood }) => {
-  // Ensure selectedFood is defined and is an array
-  /*const foodSeledted = Array.isArray(selectedFood)
-    ? selectedFood.find((item) => item.ingredientId === food.id && item.quantity > 0)
-    : null;
-*/
   const [value, setValue] = useState(food.quantity ? food.quantity: 0);
   const [isAdded, setIsAdded] = useState(food.quantity ? true : false);
-  const [errorMessage, setErrorMessage] = useState(''); // State for error message
-
-  // Trigger reset of the component when reset prop changes to true
+  const [errorMessage, setErrorMessage] = useState(''); 
   useEffect(() => {
     if (reset) {
       setValue(0);
       setIsAdded(false);
-      setErrorMessage(''); // Clear the error message on reset
-      onResetComplete(); // Notify parent component that reset is complete
+      setErrorMessage(''); 
+      onResetComplete(); 
     }
   }, [reset, onResetComplete]);
 
@@ -29,7 +22,7 @@ const FoodItem = ({ food, onFoodAdd, reset, onResetComplete, selectedFood }) => 
     }
     setIsAdded(!isAdded);
     onFoodAdd(food, isAdded ? 0 : value);
-    setErrorMessage(''); // Clear error message on successful add
+    setErrorMessage(''); 
   };
 
   return (
@@ -54,7 +47,7 @@ const FoodItem = ({ food, onFoodAdd, reset, onResetComplete, selectedFood }) => 
         </div>
       </div>
       {errorMessage && (
-        <p className="text-red-500 text-xs mt-1">{errorMessage}</p> // Display the error message
+        <p className="text-red-500 text-xs mt-1">{errorMessage}</p> 
       )}
     </div>
   );

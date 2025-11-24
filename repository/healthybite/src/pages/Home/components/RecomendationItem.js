@@ -1,62 +1,55 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCirclePlus } from '@fortawesome/free-solid-svg-icons';
+import {faCirclePlus, faCircleCheck } from '@fortawesome/free-solid-svg-icons';
 
-const RecommendationItem = ({ food, setSelection, alredyconsumed }) => {
+const RecommendationItem = ({ food, toggleSelection, isSelected, alredyconsumed }) => {
     
-    const handleAddRecommendation = () => {
-        // Doble seguridad: si ya está consumido, no hacemos nada aunque fuercen el click
+    const handleClick = () => {
         if (alredyconsumed) return;
-
-        const amount = food.measure_portion || 1;
-        
-        setSelection({ 
-            id_food: food.id, 
-            name: food.name, 
-            amount, 
-            measure: food.measure, 
-            carbohydrates_portion: food.carbohydrates_portion,
-            fats_portion: food.fats_portion, 
-            protein_portion: food.protein_portion, 
-            sodium_portion: food.sodium_portion
-        });
+        toggleSelection(food);
     };
 
-    // Definimos clases dinámicas para no ensuciar tanto el JSX
-    const containerClasses = alredyconsumed
-        ? "bg-gray-100 border-gray-300" // Estilo GRIS (Deshabilitado)
-        : "bg-healthyOrange/20 border-healthyOrange/40"; // Estilo NARANJA (Activo)
+    // Clases dinámicas
+    let containerClasses = "transition-colors duration-200 ";
+    let iconClasses = "";
+    let textClasses = "";
+    let badgeClasses = "";
 
-    const iconClasses = alredyconsumed
-        ? "text-gray-400 cursor-not-allowed" // Icono gris y cursor de prohibido
-        : "text-healthyOrange hover:text-healthyDarkOrange hover:cursor-pointer"; // Icono interactivo
-
-    const textClasses = alredyconsumed 
-        ? "text-gray-500" 
-        : "text-darkGray";
-
-    const badgeClasses = alredyconsumed
-        ? "bg-gray-200 text-gray-500"
-        : "bg-healthyOrange/30 text-healthyDarkOrange";
+    if (alredyconsumed) {
+        containerClasses += "bg-gray-100 border-gray-300";
+        iconClasses = "text-gray-400 cursor-not-allowed";
+        textClasses = "text-gray-500";
+        badgeClasses = "bg-gray-200 text-gray-500";
+    } else if (isSelected) {
+        // Estilo cuando está seleccionado (Naranja oscuro/fuerte)
+        containerClasses += "bg-healthyOrange/30 border-healthyOrange border-2 shadow-sm";
+        iconClasses = "text-healthyOrange scale-110";
+        textClasses = "text-healthyDarkOrange font-extrabold";
+        badgeClasses = "bg-healthyOrange text-white";
+    } else {
+        // Estilo normal (No seleccionado)
+        containerClasses += "bg-white border border-gray-200 hover:border-healthyOrange/50";
+        iconClasses = "text-healthyGray1 hover:text-healthyOrange cursor-pointer";
+        textClasses = "text-darkGray";
+        badgeClasses = "bg-healthyOrange/10 text-healthyDarkOrange";
+    }
 
     return (
         <div 
-            key={food.id} 
-            className={`flex flex-col font-quicksand border p-2 rounded-lg mb-2 transition-colors duration-200 ${containerClasses}`}
+            className={`flex flex-col font-quicksand p-2 rounded-lg mb-2 cursor-pointer select-none ${containerClasses}`}
+            onClick={handleClick} // Hacemos clickeable toda la tarjeta para mejor UX
         >
             <div className="flex flex-row items-center justify-between">
                 <div className="flex flex-row justify-start items-center">
                     <FontAwesomeIcon 
-                        onClick={handleAddRecommendation} 
-                        icon={faCirclePlus} 
-                        className={`text-xl sm:text-3xl mx-1 ${iconClasses}`}
+                        icon={isSelected ? faCircleCheck : faCirclePlus} 
+                        className={`text-xl sm:text-3xl mx-1 transition-all ${iconClasses}`}
                     />
-                    <p className={`font-bold text-sm sm:text-lg px-2 ${textClasses}`}>
+                    <p className={`font-bold text-sm sm:text-lg px-2 truncate max-w-[180px] sm:max-w-[250px] ${textClasses}`}>
                         {food.name} {alredyconsumed && <span className="text-xs font-normal">(Already Consumed)</span>}
                     </p>
                 </div>
                 <div className="flex flex-row items-center justify-end">
-                    {/* Badge de cantidad */}
                     <div className={`flex items-center justify-end px-3 py-1 rounded-md mr-2 ${badgeClasses}`}>
                         <p className="font-semibold text-xs sm:text-md">
                             {food.measure_portion || 1}
