@@ -8,7 +8,7 @@ import Calories from "./components/Calories";
 import FoodConsumed from "./components/FoodConsumed";
 import PopUp from "./components/PopUp";
 import DailyMenu from "./components/DailyMenu"; // Import the new component
-import { addGoal,getstreak,addNewFood,getPlatesNotUser, addUserFood, fetchAllFoods, fetchUserFoods, deleteUserFood , editUserFood, getCategories, getDefaultCategories,getProdByID, getUserDrinks,getUserPlates, getGroupedDrinkTypes, fetchUser, editUserData, getDailyMenu } from "../../firebaseService";
+import { addGoal,getstreak,addNewFood,getPlatesNotUser, addUserFood, fetchAllFoods, fetchUserFoods, deleteUserFood , editUserFood, getCategories, getDefaultCategories,getProdByID, getUserDrinks,getUserPlates, getGroupedDrinkTypes, fetchUser, editUserData } from "../../firebaseService";
 import Filter from "./components/Filter";
 import StreakCounter from "./components/StreakCounter";
 import Loading from "../../components/Loading";
@@ -491,7 +491,7 @@ useEffect(() => {
                 <PopUp user={user}  newFood={newFood} setAddMeal={setAddMeal} foodData={foodData} handleAddMeal={handleAddMeal} setNewFood={setNewFood} setSelection={setSelection} selection={selection} platesData={platesData} drinksData={drinksData} />
             }
             {showDailyMenu && (
-                <DailyMenu  setAddMeal={setShowDailyMenu} handleAddMeal={handleAddMeal} selection={selection} setSelection={setSelection}currentDate={date} allFoods={foodData} allPlates={platesData} allDrinks={drinksData}
+                <DailyMenu  setAddMeal={setShowDailyMenu} handleAddMeal={handleAddMeal} selection={selection} setSelection={setSelection}currentDate={date} allFoods={foodData} allPlates={platesData} allDrinks={drinksData }foodconsumed={filteredFood}
                 />
             )}
             {askForGoals && user && (

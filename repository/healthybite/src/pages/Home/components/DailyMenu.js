@@ -6,7 +6,7 @@ import { getWeeklyPlan, getDailyMenu } from '../../../firebaseService';
 import emptyPlate from '../../../assets/emptyPlate.png';
 import ProgressBar from '../../../components/ProgressBar';
 
-const DailyMenu = ({ setAddMeal, handleAddMeal, selection, setSelection, currentDate = new Date(), allFoods = [], allPlates = { mines: [], others: [] }, allDrinks = [] }) => {
+const DailyMenu = ({ setAddMeal, handleAddMeal, selection, setSelection, currentDate = new Date(), allFoods = [], allPlates = { mines: [], others: [] }, allDrinks = [] ,foodconsumed}) => {
     
     const [activeTab, setActiveTab] = useState('daily');
     const [userWeeklyPlan, setUserWeeklyPlan] = useState(null);
@@ -91,6 +91,22 @@ const DailyMenu = ({ setAddMeal, handleAddMeal, selection, setSelection, current
             setIsSubmitting(false);
         }
     };
+    const foodAlreadyConsumed = (foodconsumed, itemtocheck) => {
+        for (const fooditem of foodconsumed) {
+            const medida = itemtocheck.measure_portion ?? 1;
+    
+            if (
+                fooditem.id_Food === itemtocheck.id &&
+                fooditem.amount_eaten == medida
+            ) {
+                return true;
+            }
+        }
+    
+        return false; // 👉 se retorna false SOLO si recorrió todo y no encontró nada
+    };
+    
+
     const renderMyPlan = () => {
         if (loadingPlan) return <LoadingState message="Loading plan..." />;
         
@@ -132,12 +148,14 @@ const DailyMenu = ({ setAddMeal, handleAddMeal, selection, setSelection, current
                     sodium_portion: (dbItem.sodium_portion || 0) * ratio,
                     name: planItem.name || dbItem.name 
                 };
+                const alreadyConsumed=foodAlreadyConsumed(foodconsumed, preparedItem)
 
                 return (
                     <RecommendationItem 
                         key={`${mealType}-${index}`} 
                         food={preparedItem} 
                         setSelection={setSelection} 
+                        alredyconsumed={alreadyConsumed}
                     />
                 );
             }).filter(item => item !== null);
@@ -202,11 +220,13 @@ const DailyMenu = ({ setAddMeal, handleAddMeal, selection, setSelection, current
                             </p>
                             {items.map((obj, index) => {
                                 const foodItem = obj.item ? obj.item : obj; 
+                                const alreadyConsumed = foodAlreadyConsumed(foodconsumed, foodItem);
                                 return (
                                     <RecommendationItem 
                                         key={`rec-${key}-${index}`} 
                                         food={foodItem} 
                                         setSelection={setSelection} 
+                                        alredyconsumed={alreadyConsumed}
                                     />
                                 );
                             })}

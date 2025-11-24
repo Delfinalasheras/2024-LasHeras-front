@@ -216,7 +216,7 @@ const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, select
                         ) :
                         <div className='w-full h-[350px] md:h-[500px] lg:h-[330px] bg-white/40  overflow-y-auto flex justify-center flex-col items-center'>
                             <img src={show===3 ? emptyGlass : emptyPlate} className='w-1/3 md:w-1/5 opacity-30 ' alt={show===3 ? 'Empty glass' :'Empty plate'} />
-                            <p className='font-quicksand font-bold text-sm mt-3 text-healthyGray1 text-center w-3/4'>There are no {show==1 ? 'food' : show===2 ? 'plates' : show===3 ? 'drinks' : 'recommendations'}&nbsp;created</p>
+                            <p className='font-quicksand font-bold text-sm mt-3 text-healthyGray1 text-center w-3/4'>There are no {show==1 ? 'food created' : show===2 ? 'plates created' : show===3 ? 'drinks created' : 'recommendations, You already consumed one of your objetives'}</p>
                         </div>)}
                     </>
                 )}

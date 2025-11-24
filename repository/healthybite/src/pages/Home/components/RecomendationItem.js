@@ -2,9 +2,12 @@ import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCirclePlus } from '@fortawesome/free-solid-svg-icons';
 
-const RecommendationItem = ({ food, setSelection }) => {
+const RecommendationItem = ({ food, setSelection, alredyconsumed }) => {
+    
     const handleAddRecommendation = () => {
-        // Use the measure_portion as the fixed amount
+        // Doble seguridad: si ya está consumido, no hacemos nada aunque fuercen el click
+        if (alredyconsumed) return;
+
         const amount = food.measure_portion || 1;
         
         setSelection({ 
@@ -19,25 +22,48 @@ const RecommendationItem = ({ food, setSelection }) => {
         });
     };
 
+    // Definimos clases dinámicas para no ensuciar tanto el JSX
+    const containerClasses = alredyconsumed
+        ? "bg-gray-100 border-gray-300" // Estilo GRIS (Deshabilitado)
+        : "bg-healthyOrange/20 border-healthyOrange/40"; // Estilo NARANJA (Activo)
+
+    const iconClasses = alredyconsumed
+        ? "text-gray-400 cursor-not-allowed" // Icono gris y cursor de prohibido
+        : "text-healthyOrange hover:text-healthyDarkOrange hover:cursor-pointer"; // Icono interactivo
+
+    const textClasses = alredyconsumed 
+        ? "text-gray-500" 
+        : "text-darkGray";
+
+    const badgeClasses = alredyconsumed
+        ? "bg-gray-200 text-gray-500"
+        : "bg-healthyOrange/30 text-healthyDarkOrange";
+
     return (
-        <div key={food.id} className="flex flex-col font-quicksand bg-healthyOrange/20 border border-healthyOrange/40 p-2 rounded-lg mb-2">
+        <div 
+            key={food.id} 
+            className={`flex flex-col font-quicksand border p-2 rounded-lg mb-2 transition-colors duration-200 ${containerClasses}`}
+        >
             <div className="flex flex-row items-center justify-between">
                 <div className="flex flex-row justify-start items-center">
                     <FontAwesomeIcon 
                         onClick={handleAddRecommendation} 
                         icon={faCirclePlus} 
-                        className="text-xl sm:text-3xl text-healthyOrange mx-1 hover:text-healthyDarkOrange hover:cursor-pointer"
+                        className={`text-xl sm:text-3xl mx-1 ${iconClasses}`}
                     />
-                    <p className="font-bold text-sm sm:text-lg text-darkGray px-2">{food.name}</p>
+                    <p className={`font-bold text-sm sm:text-lg px-2 ${textClasses}`}>
+                        {food.name} {alredyconsumed && <span className="text-xs font-normal">(Already Consumed)</span>}
+                    </p>
                 </div>
                 <div className="flex flex-row items-center justify-end">
-                    <div className="flex items-center justify-end bg-healthyOrange/30 px-3 py-1 rounded-md mr-2">
-                        <p className="font-semibold text-xs sm:text-md text-healthyDarkOrange">
+                    {/* Badge de cantidad */}
+                    <div className={`flex items-center justify-end px-3 py-1 rounded-md mr-2 ${badgeClasses}`}>
+                        <p className="font-semibold text-xs sm:text-md">
                             {food.measure_portion || 1}
                         </p>
                     </div>
                     <div className='flex items-center justify-start w-[60px]'>
-                        <p className='text-xs sm:text-md text-healthyDarkGray1'>
+                        <p className={`text-xs sm:text-md ${alredyconsumed ? 'text-gray-400' : 'text-healthyDarkGray1'}`}>
                             {food.measure ? food.measure : 'plate'}
                         </p>
                     </div>
