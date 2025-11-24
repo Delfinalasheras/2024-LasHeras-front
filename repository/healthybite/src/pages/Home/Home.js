@@ -26,7 +26,8 @@ function Home() {
     const [userFood, setUserFood] = useState([]); 
     const [date, setDate] = useState(new Date());
     const [amount, setAmount] = useState();
-    const [selection, setSelection] = useState();
+    // const [selection, setSelection] = useState();
+    const [selection, setSelection] = useState([]);
     const [addMeal, setAddMeal] = useState(false);
     const [newFood, setNewFood] = useState();
     const [categories, setCategories]=useState([])
@@ -237,74 +238,98 @@ function Home() {
         }
     };
 
-    const handleAddMeal = async () => {
-        try {
-            const tempId = `temp_${Date.now()}`;
-            
-            // Use the selected date from the calendar, but set the time to now
-            const selectedDate = new Date(date);  // 'date' is the selected calendar date
-            const now = new Date();
-            selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
-            
-            // Adjust for timezone (same as your original logic)
-            const dateTimeForIngestion = new Date(selectedDate.getTime() - selectedDate.getTimezoneOffset() * 60000);
-            
-            let foodDetails = foodData?.find(f => f.id === selection.id_food) || 
-                             platesData?.mines?.find(p => p.id === selection.id_food) ||
-                             platesData?.others?.find(p => p.id === selection.id_food) ||
-                             drinksData?.find(d => d.id === selection.id_food);
-    
+const handleAddMeal = async (itemsToAdd) => {
+    // Si no vienen items por argumento, usamos el estado local por seguridad
+    const itemsToProcess = itemsToAdd || selection;
+
+    if (!itemsToProcess || itemsToProcess.length === 0) return;
+
+    try {
+        const newLocalMeals = []; // Array para guardar los items temporales
+        const promises = []; // Array para las promesas de Firestore
+
+        // Preparamos la fecha base una sola vez
+        const selectedDate = new Date(date);
+        const now = new Date();
+        selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+        
+        // Ajuste de zona horaria
+        const dateTimeForIngestion = new Date(selectedDate.getTime() - selectedDate.getTimezoneOffset() * 60000);
+
+        // --- BUCLE: Procesamos cada item seleccionado ---
+        for (const item of itemsToProcess) {
+            const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+            // Buscamos los detalles usando el ID del item actual del bucle
+            let foodDetails = foodData?.find(f => f.id === item.id_food) || 
+                             platesData?.mines?.find(p => p.id === item.id_food) ||
+                             platesData?.others?.find(p => p.id === item.id_food) ||
+                             drinksData?.find(d => d.id === item.id_food);
+
+            // Construimos el objeto
             const newMeal = {
                 id: tempId,
-                id_Food: selection.id_food,
-                amount_eaten: selection.amount,
-                date_ingested: dateTimeForIngestion,  // Now uses the selected date + current time
-                name: selection.name,
-                measure: selection.measure || foodDetails?.measure || 'plate',
+                id_Food: item.id_food,
+                amount_eaten: item.amount,
+                date_ingested: dateTimeForIngestion,
+                name: item.name,
+                measure: item.measure || foodDetails?.measure || 'plate',
                 measure_portion: foodDetails?.measure_portion || 1,
                 calories_portion: foodDetails?.calories_portion || Math.round(foodDetails?.calories || 0),
-                carbohydrates_portion: selection.carbohydrates_portion || foodDetails?.carbohydrates_portion || 0,
-                sodium_portion: selection.sodium_portion || foodDetails?.sodium_portion || 0,
-                fats_portion: selection.fats_portion || foodDetails?.fats_portion || 0,
-                protein_portion: selection.protein_portion || foodDetails?.protein_portion || 0,
+                carbohydrates_portion: item.carbohydrates_portion || foodDetails?.carbohydrates_portion || 0,
+                sodium_portion: item.sodium_portion || foodDetails?.sodium_portion || 0,
+                fats_portion: item.fats_portion || foodDetails?.fats_portion || 0,
+                protein_portion: item.protein_portion || foodDetails?.protein_portion || 0,
                 caffeine_portion: foodDetails?.caffeine_portion || 0,
                 sugar_portion: foodDetails?.sugar_portion || 0,
                 public: foodDetails?.public || false,
                 verified: foodDetails?.verified || false
             };
-    
-            // Update local state immediately
-            setUserFood(prev => [...prev, newMeal]);
-            setFilteredFood(prev => [...prev, newMeal]);
+
+            newLocalMeals.push(newMeal);
+
+            // Preparamos la llamada a Firestore (pero no esperamos con await aquí para hacerlo paralelo)
+            const uploadPromise = addUserFood(user_id, item, dateTimeForIngestion, item.amount)
+                .then(realId => ({ tempId, realId })); // Retornamos mapeo de IDs
             
-            // Reset form state
-            setAmount(null);
-            setSelection(null);
-            setAddMeal(false);
-    
-            // Sync with Firestore (pass the adjusted date)
-            const realId = await addUserFood(user_id, selection, dateTimeForIngestion, selection.amount);
-            
-            // Update the temp ID with the real one
-            setUserFood(prev => prev.map(food => 
-                food.id === tempId ? { ...food, id: realId } : food
-            ));
-            setFilteredFood(prev => prev.map(food => 
-                food.id === tempId ? { ...food, id: realId } : food
-            ));
-            
-            console.log('Meal synced with Firestore successfully');
-            
-        } catch (error) {
-            console.error('Error adding meal:', error);
-            
-            // Rollback on error
-            setUserFood(prev => prev.filter(food => !food.id.toString().startsWith('temp_')));
-            setFilteredFood(prev => prev.filter(food => !food.id.toString().startsWith('temp_')));
-    
-            alert('Failed to add meal. Please try again.');
+            promises.push(uploadPromise);
         }
-    };
+
+        // 1. UI Optimista: Agregamos TODO el bloque visualmente de inmediato
+        setUserFood(prev => [...prev, ...newLocalMeals]);
+        setFilteredFood(prev => [...prev, ...newLocalMeals]);
+
+        // Limpiamos formularios
+        setAmount(null);
+        setSelection([]); // Volvemos a array vacío
+        setAddMeal(false);
+
+        // 2. Sincronización Real: Esperamos a que TODOS se guarden en Firestore
+        const results = await Promise.all(promises);
+
+        // 3. Actualizamos IDs: Reemplazamos los tempIds por los reales
+        setUserFood(prev => prev.map(food => {
+            const result = results.find(r => r.tempId === food.id);
+            return result ? { ...food, id: result.realId } : food;
+        }));
+
+        setFilteredFood(prev => prev.map(food => {
+            const result = results.find(r => r.tempId === food.id);
+            return result ? { ...food, id: result.realId } : food;
+        }));
+
+        console.log('All meals synced successfully');
+
+    } catch (error) {
+        console.error('Error adding batch meals:', error);
+
+        // Rollback: Si falla, quitamos los que tengan temp_
+        setUserFood(prev => prev.filter(food => !food.id.toString().startsWith('temp_')));
+        setFilteredFood(prev => prev.filter(food => !food.id.toString().startsWith('temp_')));
+
+        alert('Failed to add meals. Please try again.');
+    }
+};
     
 
 

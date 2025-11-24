@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import PopUp from "../Home/components/PopUp";
 import ShoppingList from "./components/ShoppingList";
+import Loading from "../../components/Loading";
 import { 
     fetchAllFoods, getUserPlates, getPlatesNotUser, getUserDrinks, 
     fetchUser, 
@@ -198,27 +199,41 @@ function Planner() {
         }
     };
 
-    const handleAddMealForPlan = async () => {
-        if (!selection || !currentDay || !currentMeal) return;
-        console.log("Adding to plan:", selection);
-        const newItem = { 
-            plate_id: selection.id_food, 
-            name: selection.name,
-            amount_eaten: selection.amount 
-        };
+    const handleAddMealForPlan = async (batchSelection) => {
+        const selectionSource = batchSelection || selection;
+        const itemsToProcess = Array.isArray(selectionSource) ? selectionSource : (selectionSource ? [selectionSource] : []);
 
+        if (itemsToProcess.length === 0 || !currentDay || !currentMeal) {
+            setSelection([]); 
+            setAddMeal(false); 
+            setCurrentDay(null); 
+            setCurrentMeal(null);
+            return;
+        }
         const updatedPlan = { ...plan };
         const currentDayObj = updatedPlan.days[currentDay];
-        const currentList = currentDayObj[currentMeal] || [];
+        let currentList = currentDayObj[currentMeal] || [];
+
+        if (!selection || !currentDay || !currentMeal) return;
+        const newItems = itemsToProcess.map(item => ({
+            plate_id: item.id_food, 
+            name: item.name,
+            amount_eaten: item.amount 
+        }));
+        console.log("Adding to plan:", newItems);
+
         
         updatedPlan.days[currentDay] = {
             ...currentDayObj,
-            [currentMeal]: [...currentList, newItem]
+            [currentMeal]: [...currentList, ...newItems]
         };
 
         setPlan(updatedPlan);
         setHasUnsavedChanges(true);
-        setSelection(null); setAddMeal(false); setCurrentDay(null); setCurrentMeal(null);
+        setSelection([]); 
+        setAddMeal(false); 
+        setCurrentDay(null); 
+        setCurrentMeal(null);
     };
 
     const handleRemoveMeal = (day, meal, indexToRemove) => {
@@ -275,11 +290,14 @@ function Planner() {
             <NavBar />
             
             {loading ? (
-                <div className="flex justify-center items-center h-screen">
-                    <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-healthyOrange"></div>
+                
+                <div className="flex justify-center bg-white items-center h-screen">
+                    <Loading />
+
                 </div>
+                
             ) : (
-                <div className="w-full px-4 pb-10 pt-16 md:pt-24 transition-all duration-300"> 
+                <div className="w-full px-4 pb-10 pt-16 md:pt-24 transition-all duration-300 "> 
                     
                     {/* Header */}
                     <div className="max-w-[1800px] mx-auto bg-white/50 backdrop-blur-sm rounded-2xl p-4 mb-6 border border-white/50">

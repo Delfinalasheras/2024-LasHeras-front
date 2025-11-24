@@ -1036,17 +1036,17 @@ export const addGoal = async (goal_id) => {
 }
 
 ///FINAL
-export const getRecomendations = async (timeDay) => {
+export const getRecomendations = async () => {
     try {
         const token = await getIdToken()
-        console.log("TIME OF DAY",timeDay)
+
         if( !token){
             throw new Error ('Token not found')
         }
-        const response=await axios.get(`${ruta}/getRecomendations/${timeDay}`, 
+        const response=await axios.get(`${ruta}/getRecomendations/`, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
-    
+    console.log("recos",response.data)
     return response.data;
     }catch (error) {
         console.error('Error fetching recomendations :', error);
