@@ -1,7 +1,7 @@
 
 import { convertFieldResponseIntoMuiTextFieldProps } from "@mui/x-date-pickers/internals";
 import { auth, firestore } from "../src/firebaseConfig";
-import { getAuth, verifyPasswordResetCode, confirmPasswordReset, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from 'firebase/auth';
+import { getAuth, verifyPasswordResetCode, confirmPasswordReset, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut,deleteUser } from 'firebase/auth';
 import axios from "axios";
 import { onAuthStateChanged } from "firebase/auth";
 import { Timestamp } from "firebase/firestore";
@@ -32,22 +32,25 @@ axios.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-
 export const registerUser = async (email, password, name, surname, weight, height, birthDate) => {
+    let userCredential = null;
     try {
-        // Create the user (this automatically signs them in)
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        console.log("USER INFO LOG IN", email, password, name, surname, weight, height, birthDate)
-        // Prepare data with proper validation for weight and height
-        const parsedWeight = Math.max(0, parseFloat(weight) || 0);  // Ensure >= 0, default to 0 if invalid
-        const parsedHeight = Math.max(0, parseFloat(height) || 0);  // Ensure >= 0, default to 0 if invalid
+        // 1. Crear el usuario en Firebase Auth (Paso Crítico 1)
+        userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const firebaseUser = userCredential.user;
+        
+        console.log("USER INFO LOG IN", email, password, name, surname, weight, height, birthDate);
+
+        // Prepara los datos... (como ya lo tienes)
+        const parsedWeight = Math.max(0, parseFloat(weight) || 0);
+        const parsedHeight = Math.max(0, parseFloat(height) || 0);
         
         const data = {
             name: name,
             surname: surname,
             weight: parsedWeight,
             height: parsedHeight,
-            birthDate: new Date(birthDate),
+            birthDate: new Date(birthDate).toISOString(),
             goals: {
                 calories: 0,
                 sodium: 0,
@@ -61,31 +64,35 @@ export const registerUser = async (email, password, name, surname, weight, heigh
             achievements: [],
             email: email,
         };
-        console.log("USER INFO LOG IN", data)
+        console.log("USER INFO LOG IN", data);
         
-        // Get the ID token from the user
-        const token = await userCredential.user.getIdToken();
+        const token = await firebaseUser.getIdToken();
         if (!token) {
             throw new Error('Token not found');
         }
         
-        // Send to backend
         await axios.post(`${ruta}/RegisterUser`, data, {
             headers: {
                 Authorization: `Bearer ${token}`
             }
         });
         
-        // Fetch and return the user
         const user = await fetchUser();
         if (user) {
-            return userCredential.user.uid;
+            return firebaseUser.uid;
         }
+
     } catch (error) {
-        throw error;  // Re-throw to let the caller handle it
+        if (userCredential && userCredential.user) {
+            console.warn("API/Firestore failed, deleting user from Firebase Auth as a rollback.");
+            await deleteUser(userCredential.user).catch(deleteError => {
+                console.error("Error performing Auth rollback (deleting user):", deleteError);
+            });
+        }
+        
+        throw error;  
     }
 };
-
 
 export const loginUser = async (email, password) => {
     try {

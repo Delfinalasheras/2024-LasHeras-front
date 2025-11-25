@@ -2,10 +2,6 @@ import React, {useState,useEffect, useContext} from "react";
 import loginImg from '../../assets/login.jpg'
 import loginMobile from '../../assets/loginMobile.png'
 import Input from "../../components/Input";
-import { createUserWithEmailAndPassword,signInWithEmailAndPassword,sendPasswordResetEmail ,fetchSignInMethodsForEmail} from 'firebase/auth';
-import { collection, addDoc } from 'firebase/firestore';
-import { auth,firestore } from '../../firebaseConfig';
-import {handleInputChange} from '../inputValidation';
 import { forgotPassword, loginUser, registerUser } from "../../firebaseService";
 import { Navigate, useNavigate } from "react-router-dom";
 import { UserContext } from "../../App";
@@ -94,6 +90,14 @@ function Login() {
         if (birthDateObj >= today) {
             setMessage("Check the birth date");
             return false; 
+        }
+        const maxAgeLimit = 110;
+        const minBirthDate = new Date();
+        minBirthDate.setFullYear(today.getFullYear() - maxAgeLimit);
+        
+        if (birthDateObj < minBirthDate) {
+            setMessage(`Date of birth is too old. Maximum age is ${maxAgeLimit} years.`);
+            return false;
         }
 
         if(password !== confirmPw) {
@@ -228,7 +232,7 @@ function Login() {
                                 </div>
                                 <div className="flex sm:sticky sm:bottom-0 bg-healthyGray flex-col-reverse justify-between items-center pt-2">
                                     <button onClick={handleSubmit} className="font-quicksand bg-healthyOrange p-2 w-full  rounded-xl  text-white font-semibold mb-12 sm:my-4 hover:bg-healthyDarkOrange">Submit</button>
-                                    {message && <p className="font-quicksand text-sm font-bold py-1 rounded-md text-white bg-healthyBlue px-3 mb-1">{message}</p>}
+                                    {message && <p className="font-quicksand text-sm font-bold py-1 rounded-md text-red bg-healthyBlue px-3 mb-1">{message}</p>}
                                 </div>
                             </div>
                         </div>)
