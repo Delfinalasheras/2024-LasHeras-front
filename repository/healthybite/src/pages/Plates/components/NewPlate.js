@@ -6,6 +6,7 @@ import { faEye, faEyeSlash, faImage, faMagnifyingGlass } from '@fortawesome/free
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Visibility } from './Visibility';
 import { plateAchivements } from '../../../components/AchivementsValidation'
+import { handleTextInputChange } from '../../inputValidation';
 
 
 const NewPlate = ({ foodData, setPlates, plates }) => {
@@ -20,6 +21,7 @@ const NewPlate = ({ foodData, setPlates, plates }) => {
   const fileInputRef = useRef(null);
   const [publicPlate, setPublicPlate]=useState(false)
   const [timeDay, setTimeDay] = useState([]); // NUEVO: Estado para time of day
+  const [nameError, setNameError] = useState('');
 
   // Function to handle adding/removing food items
   const handleImageChange = (e) => {
@@ -58,24 +60,31 @@ const NewPlate = ({ foodData, setPlates, plates }) => {
 
   // Function to calculate total calories
   const calculateTotalNutrients = () => {
-    return selectedFoods.reduce(
+    const totals = selectedFoods.reduce(
       (totals, food) => {
         const quantityFactor = food.quantity / food.measure_portion;
+  
         totals.calories += food.calories_portion * quantityFactor;
         totals.sodium += food.sodium_portion * quantityFactor;
         totals.fats += food.fats_portion * quantityFactor;
         totals.carbohydrates += food.carbohydrates_portion * quantityFactor;
         totals.protein += food.protein_portion * quantityFactor;
+  
         return totals;
       },
       { calories: 0, sodium: 0, fats: 0, carbohydrates: 0, protein: 0 }
     );
+  
+    // acá redondeamos
+    return {
+      calories: Math.round(totals.calories),
+      sodium: Math.round(totals.sodium),
+      fats: Math.round(totals.fats),
+      carbohydrates: Math.round(totals.carbohydrates),
+      protein: Math.round(totals.protein)
+    };
   };
-
-  const ingredientsArray = selectedFoods.map(food => ({
-    ingredientId: food.id,
-    quantity: food.quantity
-}));
+  
   
 const createPlate = async () => {
   if (!plateName) {
@@ -86,7 +95,6 @@ const createPlate = async () => {
     setMessage("Please select the food you want to include");
     return;
   }
-  // NUEVO: Validación de time of day
   if (timeDay.length === 0) {
     setMessage("Please select at least one meal time");
     return;
@@ -97,7 +105,6 @@ const createPlate = async () => {
     console.log("LEVEL", user.validation)
     let imageUrl = "";
     if (image) {
-      // Upload the image and get the URL
       imageUrl = await uploadImageToStorage(image);
     }
     const totals = calculateTotalNutrients();
@@ -136,6 +143,7 @@ const createPlate = async () => {
     setPlateName("");
     setPublicPlate(false)
     setSearch('')
+    setNameError('');
     setSelectedFoods([]);
     setImage(null); // Clear the selected image
     setTimeDay([]); // NUEVO: Limpiar timeDay
@@ -188,7 +196,7 @@ const savePlate = async () => {
             type="text"
             placeholder="Plate name"
             value={plateName}
-            onChange={(e) => setPlateName(e.target.value)}
+            onChange={(e) => handleTextInputChange(e.target.value, setPlateName, setNameError)}
           />
           <Visibility publicPlate={publicPlate} setPublicPlate={setPublicPlate}/>
           <input

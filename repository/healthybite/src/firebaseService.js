@@ -5,8 +5,8 @@ import { getAuth, verifyPasswordResetCode, confirmPasswordReset, createUserWithE
 import axios from "axios";
 import { onAuthStateChanged } from "firebase/auth";
 import { Timestamp } from "firebase/firestore";
-// const ruta='http://127.0.0.1:8000'
-const ruta ='https://two024-lasheras-back.onrender.com'
+const ruta='http://127.0.0.1:8000'
+// const ruta ='https://two024-lasheras-back.onrender.com'
 let cachedUserUid = null;
 
 export const getIdToken = async () => {
@@ -106,8 +106,10 @@ export const loginUser = async (email, password) => {
 
 export const forgotPassword = async (email) => {
     try {
-      await sendPasswordResetEmail(auth, email);
-      return "Reset email sent";
+        return await sendPasswordResetEmail(auth, email, {
+            url: "https://2024-ranchoaparte-front-ivory.vercel.app/resetPassword",
+            handleCodeInApp: true,
+          });
     } catch (error) {
       throw error.message;
     }

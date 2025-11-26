@@ -3,11 +3,12 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import React, { useState, useEffect } from 'react';
 import DeletePopUp from '../../../components/DeletePopUp';
 import { deleteDrink, updateDrink } from '../../../firebaseService';
-
+import { handleTextInputChange } from '../../inputValidation';
 const DrinkItem = ({ drink, typeOfDrinks, handleUpdate }) => {
     const [deleteItem, setDeleteItem] = useState(false);
     const [edit, setEdit] = useState(false);
     const [caretClicked, setCaretClicked] = useState(false);
+    const [nameError, setNameError] = useState('');
 
     const [options, setOption] = useState(false);
     const [message, setMessage] = useState('');
@@ -78,6 +79,7 @@ const DrinkItem = ({ drink, typeOfDrinks, handleUpdate }) => {
             console.log("Data to update:", data);
     
             setMessage('Drink updated successfully');
+            setNameError("")
             setEdit(false);
             handleUpdate();
             console.log('Drink updated successfully');
@@ -122,7 +124,7 @@ const DrinkItem = ({ drink, typeOfDrinks, handleUpdate }) => {
         const newValue = e.target.value;
 
         if (newValue === "") {
-            setValue(0);  // Fixed: Default to 0 instead of ""
+            setValue("");  // Fixed: Default to 0 instead of ""
             return;
         }
         const parsedValue = parseInt(newValue, 10);
@@ -164,7 +166,11 @@ const DrinkItem = ({ drink, typeOfDrinks, handleUpdate }) => {
                             <div className='w-full'>
                                 <div className='flex flex-col w-full my-2'>
                                     <p className='text-white font-bold text-sm'>Drink name</p>
-                                    <input type="text" onChange={(e) => setName(e.target.value)} value={name} className='bg-white focus:outline-none px-2 py-1 w-full text-sm text-darkGray rounded-full' />
+                                    <input type="text" 
+                                    onChange={(e) => handleTextInputChange(e.target.value, setName, setNameError)}
+
+                                     value={name} className='bg-white focus:outline-none px-2 py-1 w-full text-sm text-darkGray rounded-full' 
+                                     />
                                 </div>
 
                                 <div className='flex flex-col w-full my-2'>
@@ -215,7 +221,8 @@ const DrinkItem = ({ drink, typeOfDrinks, handleUpdate }) => {
                                         type="text" 
                                         placeholder='cup'
                                         value={measure} 
-                                        onChange={(e) => setMeasure(e.target.value)} 
+                                        onChange={(e) => handleTextInputChange(e.target.value, setMeasure, setNameError)}
+
                                         className='bg-white focus:outline-none px-2 py-1 w-full text-sm text-darkGray rounded-full' 
                                     />
                                 </div>
