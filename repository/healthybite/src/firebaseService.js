@@ -5,8 +5,8 @@ import { getAuth, verifyPasswordResetCode, confirmPasswordReset, createUserWithE
 import axios from "axios";
 import { onAuthStateChanged } from "firebase/auth";
 import { Timestamp } from "firebase/firestore";
-// const ruta='http://127.0.0.1:8000'
-const ruta ='https://two024-lasheras-back.onrender.com'
+const ruta='http://127.0.0.1:8000'
+// const ruta ='https://two024-lasheras-back.onrender.com'
 let cachedUserUid = null;
 
 export const getIdToken = async () => {
@@ -1099,6 +1099,7 @@ export const updateWeeklyPlan = async (data) => {
 export const getWeeklyPlan = async (week_start) => {
     try {
         const token = await getIdToken()
+        console.log("entro a getwp, WEEK START", week_start)
         if( !token){
             throw new Error ('Token not found')
         }
