@@ -14,13 +14,20 @@ const DailyMenu = ({ setAddMeal, handleAddMeal, selection = [], setSelection, cu
     const [dailyMenu, setDailyMenu] = useState(null); 
     const [loadingDaily, setLoadingDaily] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const getStartOfWeek = (date) => {
-        const d = new Date(date);
-        const day = d.getDay();
-        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-        const monday = new Date(d.setDate(diff));
-        return monday.toISOString().split('T')[0];
-    };
+const getStartOfWeek = (date) => {
+    const d = new Date(date);
+    const day = d.getDay();
+
+    // obtener lunes (getDay: 0=domingo, 1=lunes... 6=sábado)
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - ((day + 6) % 7));
+
+    // evitar problemas de timezone
+    monday.setHours(0, 0, 0, 0);
+
+    return monday.toISOString().slice(0, 10);
+};
+
 
     const getDayName = (date) => {
         const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -28,7 +35,11 @@ const DailyMenu = ({ setAddMeal, handleAddMeal, selection = [], setSelection, cu
     };
 
     const getFormattedDate = (date) => {
-        return date.toISOString().split('T')[0];
+        // Opción segura manual que respeta la zona horaria local
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     };
 
     const findItemDetails = (idToFind) => {
@@ -111,7 +122,7 @@ const DailyMenu = ({ setAddMeal, handleAddMeal, selection = [], setSelection, cu
 
             await handleAddMeal(selection);
             setSelection([]); 
-            setAddMeal(false);    
+            setAddMeal(false);   
         } catch (error) {
             console.error('Error adding meals:', error);
         } finally {
@@ -135,6 +146,7 @@ const DailyMenu = ({ setAddMeal, handleAddMeal, selection = [], setSelection, cu
         if (loadingPlan) return <LoadingState message="Loading plan..." />;
         
         const dayName = getDayName(currentDate);
+        console.log("HAY PLAN",userWeeklyPlan)
         const dayData = userWeeklyPlan?.days?.[dayName];
 
         if (!dayData) return <EmptyState message={`No plan for ${dayName}`} />;
@@ -174,8 +186,10 @@ const DailyMenu = ({ setAddMeal, handleAddMeal, selection = [], setSelection, cu
                 };
                 const alreadyConsumed = foodAlreadyConsumed(foodconsumed, preparedItem);
                 const isSelected = checkIsSelected(preparedItem.id);
+                console.log("RECO CARACT",dbItem,planItem)
 
                 return (
+                    
                     <RecommendationItem 
                         key={`${mealType}-${index}`} 
                         food={preparedItem} 
@@ -245,7 +259,8 @@ const DailyMenu = ({ setAddMeal, handleAddMeal, selection = [], setSelection, cu
                                 {label}
                             </p>
                             {items.map((obj, index) => {
-                                const foodItem = obj.item ? obj.item : obj; 
+                                const foodItem = obj.item ? obj.item : obj;
+                                const amount_eaten = (foodItem.measure_portion||1) * (obj.amount_eaten);
                                 const alreadyConsumed = foodAlreadyConsumed(foodconsumed, foodItem);
                                 const isSelected = checkIsSelected(foodItem.id);
 
@@ -256,6 +271,7 @@ const DailyMenu = ({ setAddMeal, handleAddMeal, selection = [], setSelection, cu
                                         toggleSelection={toggleSelection}
                                         isSelected={isSelected}
                                         alredyconsumed={alreadyConsumed}
+                                        amount_eaten ={amount_eaten}
                                     />
                                 );
                             })}
@@ -322,7 +338,7 @@ const DailyMenu = ({ setAddMeal, handleAddMeal, selection = [], setSelection, cu
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto pr-1 scrollbar-hide pb-16">
+                <div className="flex-1 overflow-y-auto pr-1 scrollbar-hide pb-24">
                     {activeTab === 'daily' ? renderDailyMenu() : renderMyPlan()}
                 </div>
 
@@ -333,10 +349,6 @@ const DailyMenu = ({ setAddMeal, handleAddMeal, selection = [], setSelection, cu
                             <div className='flex flex-col overflow-hidden w-full'>
                                 <p className="font-quicksand font-bold text-darkGray text-sm truncate">
                                     {selection.length} item{selection.length > 1 ? 's' : ''} selected
-                                </p>
-                                {/* Opcional: Mostrar nombres cortados */}
-                                <p className="text-xs text-healthyGray1 font-semibold truncate w-full">
-                                    {selection.map(s => s.name).join(', ')}
                                 </p>
                             </div>
                             <div 

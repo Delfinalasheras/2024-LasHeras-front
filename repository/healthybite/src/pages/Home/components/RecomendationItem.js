@@ -8,6 +8,7 @@ const RecommendationItem = ({ food, toggleSelection, isSelected, alredyconsumed 
         if (alredyconsumed) return;
         toggleSelection(food);
     };
+    console.log(food)
 
     // Clases dinámicas
     let containerClasses = "transition-colors duration-200 ";

@@ -106,8 +106,10 @@ export const loginUser = async (email, password) => {
 
 export const forgotPassword = async (email) => {
     try {
-      await sendPasswordResetEmail(auth, email);
-      return "Reset email sent";
+        return await sendPasswordResetEmail(auth, email, {
+            url: "https://2024-ranchoaparte-front-ivory.vercel.app/resetPassword",
+            handleCodeInApp: true,
+          });
     } catch (error) {
       throw error.message;
     }
@@ -1097,6 +1099,7 @@ export const updateWeeklyPlan = async (data) => {
 export const getWeeklyPlan = async (week_start) => {
     try {
         const token = await getIdToken()
+        console.log("entro a getwp, WEEK START", week_start)
         if( !token){
             throw new Error ('Token not found')
         }

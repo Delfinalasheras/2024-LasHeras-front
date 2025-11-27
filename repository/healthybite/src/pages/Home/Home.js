@@ -252,9 +252,8 @@ const handleAddMeal = async (itemsToAdd) => {
         const selectedDate = new Date(date);
         const now = new Date();
         selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+        const dateTimeForIngestion = selectedDate;
         
-        // Ajuste de zona horaria
-        const dateTimeForIngestion = new Date(selectedDate.getTime() - selectedDate.getTimezoneOffset() * 60000);
 
         // --- BUCLE: Procesamos cada item seleccionado ---
         for (const item of itemsToProcess) {

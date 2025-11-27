@@ -288,9 +288,6 @@ const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, select
                                 <p className="font-quicksand font-bold text-darkGray text-sm">
                                     {selection.length} item{selection.length !== 1 ? 's' : ''} selected
                                 </p>
-                                <p className="text-xs text-healthyGray1 truncate w-full">
-                                    {selection.map(s => s.name).join(', ')}
-                                </p>
                             </div>
                             <div 
                                 onClick={() => setSelection([])}

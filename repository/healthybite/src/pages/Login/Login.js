@@ -96,7 +96,12 @@ function Login() {
         minBirthDate.setFullYear(today.getFullYear() - maxAgeLimit);
         
         if (birthDateObj < minBirthDate) {
-            setMessage(`Date of birth is too old. Maximum age is ${maxAgeLimit} years.`);
+            setMessage(`Date of birth is not valid. Maximum age is ${maxAgeLimit} years.`);
+            return false;
+        }
+        const nameSurnameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+$/;
+        if (!nameSurnameRegex.test(name) || !nameSurnameRegex.test(surname)) {
+            setMessage("Name and surname should only contain letters, spaces, apostrophes, or hyphens.");
             return false;
         }
 
@@ -232,7 +237,7 @@ function Login() {
                                 </div>
                                 <div className="flex sm:sticky sm:bottom-0 bg-healthyGray flex-col-reverse justify-between items-center pt-2">
                                     <button onClick={handleSubmit} className="font-quicksand bg-healthyOrange p-2 w-full  rounded-xl  text-white font-semibold mb-12 sm:my-4 hover:bg-healthyDarkOrange">Submit</button>
-                                    {message && <p className="font-quicksand text-sm font-bold py-1 rounded-md text-red bg-healthyBlue px-3 mb-1">{message}</p>}
+                                    {message && <p className="font-quicksand text-sm font-bold py-1 rounded-md text-red-500 bg-healthyBlue px-3 mb-1">{message}</p>}
                                 </div>
                             </div>
                         </div>)

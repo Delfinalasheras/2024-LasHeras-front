@@ -13,50 +13,64 @@ const Comments = ({ data, setScores }) => {
     const [score, setScore] = useState(null);
     const comments = data.comments.filter((item) => item.id_User !== auth.currentUser?.uid);
     const [allComments, setAllComments] = useState(data.comments);
-    const [isSubmitting, setIsSubmitting] = useState(false);  // Track submission status
+    const [isSubmitting, setIsSubmitting] = useState(false);  
+    const [validationError, setValidationError] = useState(''); 
 
     const handleNewComment = async () => {
-        // Allow submission if there's a score or both score and comment
-        if ((comment !== '' || score) && !isSubmitting) {  
-            setIsSubmitting(true);  // Set submitting state to true
+        setValidationError(''); 
+        const trimmedComment = comment.trim();
 
-            const newComment = {
-                comment: comment,  // Can be empty if only rating is given
-                score: score,
-                id_User: auth.currentUser?.uid,
-            };
-    
-            const updatedAllComments = [...allComments, newComment];
-            setAllComments(updatedAllComments);
-            setMyComments([...myComments, newComment]);
-            
-            const totalScore = updatedAllComments.reduce((acc, curr) => acc + curr.score, 0);
-            const averageScore = (totalScore / updatedAllComments.length).toFixed(1);
-            
-            setScores(averageScore);
-    
-            const updatedInfo = {
-                plate_Id: data.plate_Id,
-                comments: updatedAllComments,
-                score: parseFloat(averageScore)
-            };
-            
-            try {
-                await updateComments(data.id, updatedInfo);
-                console.log("Comments updated successfully.");
-            } catch (error) {
-                console.error("Failed to update comments:", error);
-            }
-    
-            setComment('');
-            setScore(null);
-            setIsSubmitting(false);  // Reset submitting state after completion
+        if (trimmedComment === '') {
+            setValidationError('El comentario no puede estar vacío.');
+            return; 
         }
+        if (score === null || score === 0) {
+            setValidationError('Debes seleccionar una puntuación válida.');
+            return;
+        }
+        
+        if (isSubmitting) {
+            return;
+        }
+
+        
+        setIsSubmitting(true);  
+
+        const newComment = {
+            comment: trimmedComment, 
+            score: score,
+            id_User: auth.currentUser?.uid,
+        };
+
+        const updatedAllComments = [...allComments, newComment];
+        setAllComments(updatedAllComments);
+        setMyComments([...myComments, newComment]);
+        
+        const totalScore = updatedAllComments.reduce((acc, curr) => acc + curr.score, 0);
+        const averageScore = (totalScore / updatedAllComments.length).toFixed(1);
+        
+        setScores(averageScore);
+
+        const updatedInfo = {
+            plate_Id: data.plate_Id,
+            comments: updatedAllComments,
+            score: parseFloat(averageScore)
+        };
+        
+        try {
+            await updateComments(data.id, updatedInfo);
+            console.log("Comments updated successfully.");
+        } catch (error) {
+            console.error("Failed to update comments:", error);
+        }
+
+        setComment('');
+        setScore(null);
+        setIsSubmitting(false);  
     };
 
     return (
         <div className='flex flex-col justify-between items-between w-full h-full px-2 pt-1'>
-            {/* Show comments only if there are comments or my comments */}
             {(comments.length > 0 || myComments.length > 0) && (
                 <div className='bg-white rounded-md p-1 flex flex-col w-full shadow-sm max-h-32 justify-start items-center h-full overflow-y-auto'>
                     {comments.length === 0 && myComments.length === 0 ? (
@@ -73,6 +87,12 @@ const Comments = ({ data, setScores }) => {
                     )}
                 </div>
             )}
+            
+
+            {validationError && (
+                <p className="text-red-500 text-xs mt-1 text-center font-medium">{validationError}</p>
+            )}
+
             <div className='flex justify-between items-center w-full sticky bottom-0 bg-white rounded-md my-2 shadow-sm'>
                 <input
                     value={comment}
@@ -91,7 +111,6 @@ const Comments = ({ data, setScores }) => {
                 <div 
                     onClick={handleNewComment} 
                     className={`flex w-2/12 md:w-1/12 h-full justify-center items-center bg-healthyOrange hover:bg-healthyDarkOrange p-1 cursor-pointer rounded-r-md ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    disabled={isSubmitting}  // Disable if submitting
                 >
                     <FontAwesomeIcon icon={faPaperPlane} className='text-white text-lg' />
                 </div>

@@ -24,3 +24,12 @@ export const handleInputChange2 = (value, min, max, setter) => {
         setter(parsedValue);
     }
 };
+export const handleTextInputChange = (value, setValue, setError) => {
+    const regex = /^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]*$/;
+    if (regex.test(value)) {
+        setValue(value);
+        setError("");
+    } else {
+        setError("Only letters are allowed.");
+    }
+};

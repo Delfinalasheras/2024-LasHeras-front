@@ -99,7 +99,11 @@ export const PlateItem = ({ plateDetail, foodData, handleupdatePlates,setSuccess
                 ),
                 public: publicPlate
             };
-
+        if (updatedPlate.ingredients.length === 0) {
+            setSuccessMessage("Plate must have at least one ingredient.");
+            setTimeout(() => setSuccessMessage(""), 2500);
+            return;
+        }
         try {
             await updatePlate(updatedPlate, plate.id);
             setSuccessMessage("Plate updated successfully!");

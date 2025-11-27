@@ -18,6 +18,7 @@ export const NewDrink = ({ setNewDrink, handleUpdate, categorydrinks, drinktypes
     const [newType, setNewType] = useState([]);  // This can be removed if not used elsewhere
     const [message, setMessage] = useState('');
     const [type, setTypeId] = useState('');
+    const [nameError, setNameError] = useState('');
     
     // New: Local state for drink types to enable optimistic updates
     const [localDrinkTypes, setLocalDrinkTypes] = useState(drinktypes);
@@ -71,6 +72,15 @@ export const NewDrink = ({ setNewDrink, handleUpdate, categorydrinks, drinktypes
     useEffect(() => {
         setTypeOptions(false);
     }, []);
+    const handleTextInputChange = (value, setValue, setError) => {
+        const regex = /^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]*$/;
+        if (regex.test(value)) {
+            setValue(value);
+            setError("");
+        } else {
+            setError("Only letters are allowed.");
+        }
+    };
 
     const handleNewDrink = async () => {
         if (!name) {
@@ -85,6 +95,7 @@ export const NewDrink = ({ setNewDrink, handleUpdate, categorydrinks, drinktypes
             setMessage("Please select a measure");
             return;
         }
+
         if (!amount) {
             setMessage("The amount is required");
             return;
@@ -111,6 +122,7 @@ export const NewDrink = ({ setNewDrink, handleUpdate, categorydrinks, drinktypes
                 setCaffeine('');
                 setSugar('');
                 setMessage('');
+                setNameError('');
                 setAmount('');
                 setTypeId('');
                 setTypeSelected('');
@@ -133,7 +145,7 @@ export const NewDrink = ({ setNewDrink, handleUpdate, categorydrinks, drinktypes
                 
                 <input
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(e) => handleTextInputChange(e.target.value, setName, setNameError)}
                     className='text-sm font-semibold bg-healthyGray p-1 text-healthyDarkGreen focus:outline-none rounded-lg text-center w-10/12 focus:ring focus:ring-healthyGreen'
                     type='text'
                     placeholder='Drink name'
@@ -179,7 +191,8 @@ export const NewDrink = ({ setNewDrink, handleUpdate, categorydrinks, drinktypes
                                         type='text'
                                         placeholder='Other type'
                                         value={typePersonalize}
-                                        onChange={(e) => setTypePersonalize(e.target.value)}
+                                        onChange={(e) => handleTextInputChange(e.target.value, setTypePersonalize, setNameError)}
+
                                         className={`bg-healthyGray2 text-right text-sm py-1 px-2 text-healthyGreen focus:outline-none ${typePersonalize ? 'w-4/5 rounded-r-sm' : 'w-full rounded-sm'}`}
                                     />
                                 </div>
@@ -197,7 +210,8 @@ export const NewDrink = ({ setNewDrink, handleUpdate, categorydrinks, drinktypes
                             <input
                                 type='text'
                                 value={measure}
-                                onChange={(e) => setMeasure(e.target.value)}
+                                onChange={(e) => handleTextInputChange(e.target.value, setMeasure, setNameError)}
+
                                 placeholder='cup'
                                 className='bg-healthyGray p-1 w-2/3 text-center rounded-md focus:outline-none focus:ring focus:ring-healthyGreen'
                             />
