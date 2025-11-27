@@ -27,10 +27,8 @@ function EditCategory({setEditCategory, setAddFood, category, icon, food, handle
         if(data !== category) {
             try{
                 await updateCategory(data,category.id)
-                console.log(data)
                 setEditCategory(false)
                 handleUpdate()
-                console.log("Category updated succesfully")
             }catch(error){
                 console.log("Error saving category changes by ID ", error)
             }

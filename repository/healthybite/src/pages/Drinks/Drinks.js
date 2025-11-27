@@ -35,7 +35,6 @@ export const Drinks = () => {
         const drinks = await getUserDrinks();
         const fetchedNotifications = await getUserNotification();
         setNotifications(fetchedNotifications || []);
-        console.log(fetchedNotifications);
         drinkAchievments(drinks.length)
 
         setDrinksData(drinks);

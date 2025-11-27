@@ -3,10 +3,7 @@ import GoalSetter from './GoalSetter';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBookmark, faUser } from '@fortawesome/free-solid-svg-icons';
 
-function Goals({user, setUser, editGoals}) {
-
-    console.log("GOALS USER → ", user)
-    
+function Goals({user, setUser, editGoals}) {    
     const [calories, setCalories] = useState(user.goals.calories ? user.goals.calories : 0);
     const [sodium, setSodium] = useState(user.goals.sodium ? user.goals.sodium : 0);
     const [carbohydrate, setCarbohydrate] = useState(user.goals.carbohydrates ? user.goals.carbohydrates : 0);

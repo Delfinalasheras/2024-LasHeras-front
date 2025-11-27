@@ -5,6 +5,7 @@ import Input from "../../components/Input";
 import { forgotPassword, loginUser, registerUser } from "../../firebaseService";
 import { Navigate, useNavigate } from "react-router-dom";
 import { UserContext } from "../../App";
+import ResetPassword from "../ResetPassword/ResetPassword";
 
 function Login() {
     const [inValidation,setInValidation]=useState(false)
@@ -70,7 +71,6 @@ function Login() {
             setTimeout(() => {
                 setResetPasswordMessage('');
             }, 5000); 
-            console.log(msg)
         } catch (error) {
             console.error('Error during password reset:', error);
             setResetPasswordMessage('Error: ' + error.message);
@@ -171,7 +171,6 @@ function Login() {
         try {
             const user_id = await loginUser(email,password)
             setUser_id(user_id)
-            console.log('Inicio de sesión exitoso:', user_id);
             user_id && navigate("/home")
         } catch (error) {
             switch (error.code) {

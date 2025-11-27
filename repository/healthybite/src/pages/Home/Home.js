@@ -99,7 +99,6 @@ function Home() {
     }, [userFood]);
 
     const updateUserGoals = async (userEdited) => {
-        console.log("USER EDITED FROM POPUP → ", userEdited)
         setAskForGoals(false)
         setUser(userEdited)
         await editUserData(userEdited)
@@ -109,7 +108,6 @@ function Home() {
 
     useEffect(()=>{
         if(filterSelected) {
-            console.log('se aplico filtro filterselected ',filterSelected)
             const aplyingFilter=filteredFood.filter((item)=>filterSelected.foods.includes(item.id_Food) || filterSelected.plates?.includes(item.id_Food) || filterSelected.drinks?.includes(item.id_Food) )
             setFilteredFood(aplyingFilter)
         }else{
@@ -163,7 +161,6 @@ function Home() {
             }
             const userFood = await fetchUserFoods(user_id, daySelected ? daySelected:  date );
             let { food, plates, drinks } ={foodData, platesData, drinksData}
-            console.log('USER FOOD ', userFood)
             if (food?.length===0 || !plates ||!drinks) {
                 ({ food, plates, drinks}= await get_Food_plates_drinks());
                 setFoodData(food);
@@ -186,7 +183,6 @@ function Home() {
                     } catch (error) {
                         console.error('Error buscando el producto:', error);
                     }
-                    console.log('FOOD DETAIL ', foodDetails)
                 }
                 
                 const calories = foodDetails?.calories_portion !== undefined 
@@ -245,10 +241,9 @@ const handleAddMeal = async (itemsToAdd) => {
     if (!itemsToProcess || itemsToProcess.length === 0) return;
 
     try {
-        const newLocalMeals = []; // Array para guardar los items temporales
-        const promises = []; // Array para las promesas de Firestore
+        const newLocalMeals = []; 
+        const promises = []; 
 
-        // Preparamos la fecha base una sola vez
         const selectedDate = new Date(date);
         const now = new Date();
         selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
@@ -317,7 +312,6 @@ const handleAddMeal = async (itemsToAdd) => {
             return result ? { ...food, id: result.realId } : food;
         }));
 
-        console.log('All meals synced successfully');
 
     } catch (error) {
         console.error('Error adding batch meals:', error);
@@ -360,7 +354,6 @@ const handleEditFoodConsumed = async (idDoc_user_food, data) => {
         ));
         
         await editUserFood(idDoc_user_food, data);
-        console.log('Meal edited in Firestore successfully');
         
     } catch (err) {
         console.error('Error editing meal:', err.message);

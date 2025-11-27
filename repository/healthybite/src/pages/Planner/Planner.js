@@ -109,7 +109,6 @@ function Planner() {
                     allPlatesMap[item.id] = item; 
                 });
                 setAllPlatesMap(allPlatesMap);
-                console.log("allFoods", allFoods);
                 const sortedFood = food.sort((a, b) => a.name.toUpperCase() < b.name.toUpperCase() ? -1 : 1);
                 setFoodData(sortedFood);
                 setPlatesData({ mines: privatePlates, others: otherPlates });
@@ -178,7 +177,6 @@ function Planner() {
 
 
     const handleSaveChanges = async () => {
-        console.log("GUARDANDO PAYLOAD CON FECHAS:", JSON.stringify(plan, null, 2));
         setLoading(true);
         
         try {
@@ -187,7 +185,6 @@ function Planner() {
             if (response) {
                 setHasUnsavedChanges(false);
                 setShoppingListCache(null);
-                console.log("Guardado exitoso!");
             } else {
                  throw new Error("API did not return a successful response.");
             }
@@ -220,7 +217,6 @@ function Planner() {
             name: item.name,
             amount_eaten: item.amount 
         }));
-        console.log("Adding to plan:", newItems);
 
         
         updatedPlan.days[currentDay] = {

@@ -59,7 +59,6 @@ export const NewDrink = ({ setNewDrink, handleUpdate, categorydrinks, drinktypes
             // Call the parent's update function to sync globally
             handleDrinkTypeUpdate();
         } catch (error) {
-            console.log("Error creating new drink type: ", error);
             setMessage("Failed to add new type. Please try again.");
             
             // Revert optimistic update on failure
@@ -116,7 +115,6 @@ export const NewDrink = ({ setNewDrink, handleUpdate, categorydrinks, drinktypes
                     measure_portion: amount,
                     typeOfDrink: type,
                 };
-                console.log(data);
                 await createDrink(data);
                 setName('');
                 setCaffeine('');
@@ -130,7 +128,6 @@ export const NewDrink = ({ setNewDrink, handleUpdate, categorydrinks, drinktypes
                 setNewDrink(false);
                 handleUpdate();
                 setDrinksData(prev => [...prev, data]);
-                console.log('Drink added successfully');
             } catch (error) {
                 console.log('Error adding new drink: ', error);
             }

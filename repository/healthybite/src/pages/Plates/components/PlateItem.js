@@ -63,9 +63,7 @@ export const PlateItem = ({ plateDetail, foodData, handleupdatePlates,setSuccess
             score: 0
         };
         try {
-            // Assume createReviewAPI is the function that saves the review to Firebase
             await createReview(review);
-            console.log("Review created successfully!");
         } catch (error) {
             console.error("Error creating review:", error);
         }

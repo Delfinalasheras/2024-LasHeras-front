@@ -146,7 +146,6 @@ const getStartOfWeek = (date) => {
         if (loadingPlan) return <LoadingState message="Loading plan..." />;
         
         const dayName = getDayName(currentDate);
-        console.log("HAY PLAN",userWeeklyPlan)
         const dayData = userWeeklyPlan?.days?.[dayName];
 
         if (!dayData) return <EmptyState message={`No plan for ${dayName}`} />;
@@ -186,7 +185,6 @@ const getStartOfWeek = (date) => {
                 };
                 const alreadyConsumed = foodAlreadyConsumed(foodconsumed, preparedItem);
                 const isSelected = checkIsSelected(preparedItem.id);
-                console.log("RECO CARACT",dbItem,planItem)
 
                 return (
                     

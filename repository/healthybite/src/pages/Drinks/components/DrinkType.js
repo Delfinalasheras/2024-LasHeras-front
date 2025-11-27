@@ -14,7 +14,6 @@ const DrinkType = ({ drinkType, setTypeSelected, setTypeId,setTypeOptions, handl
         try{
             await deleteDrinkType(drinkType.id)
             handleDrinkTypeUpdate()
-            console.log("deletetype", drinkType.id)
             
             // handleUpdate()
         }catch(error){

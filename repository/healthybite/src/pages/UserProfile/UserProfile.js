@@ -206,7 +206,6 @@ function UserProfile() {
     const getUser = async () => {
         try {
             const userData = await fetchUser();
-            console.log("User Data-profile ", userData)
             setUser(userData);
             setName(userData.name);
             setSurname(userData.surname);
@@ -242,7 +241,6 @@ function UserProfile() {
         
         try {
             await editUserData(data);
-            console.log('User edited successfully in Firestore');
             setMessage('Changes saved successfully!');
             setEdit(false);
             setInValidation(false);
