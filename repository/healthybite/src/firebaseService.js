@@ -5,8 +5,8 @@ import { getAuth, verifyPasswordResetCode, confirmPasswordReset, createUserWithE
 import axios from "axios";
 import { onAuthStateChanged } from "firebase/auth";
 import { Timestamp } from "firebase/firestore";
-const ruta='http://127.0.0.1:8000'
-// const ruta ='https://two024-lasheras-back.onrender.com'
+// const ruta='http://127.0.0.1:8000'
+const ruta ='https://two024-lasheras-back.onrender.com'
 let cachedUserUid = null;
 
 export const getIdToken = async () => {
@@ -268,6 +268,7 @@ export const fetchAllFoods = async () => {
 
 
 export const addUserFood = async (user_id,selection, date, amount) => {
+    console.log('Adding food:', { user_id, selection, date });
     try {
         const token = await getIdToken()
         if( !token){

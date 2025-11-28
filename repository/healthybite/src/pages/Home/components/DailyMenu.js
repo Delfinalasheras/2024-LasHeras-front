@@ -5,6 +5,7 @@ import { getWeeklyPlan, getDailyMenu } from '../../../firebaseService';
 import emptyPlate from '../../../assets/emptyPlate.png';
 import ProgressBar from '../../../components/ProgressBar';
 import RecommendationItem from './RecomendationItem';
+import PlanItem from './PlanItem';
 
 const DailyMenu = ({ setAddMeal, handleAddMeal, selection = [], setSelection, currentDate = new Date(), allFoods = [], allPlates = { mines: [], others: [] }, allDrinks = [] ,foodconsumed}) => {
     
@@ -66,16 +67,16 @@ const getStartOfWeek = (date) => {
             setSelection(newSelection);
         } else {
 
-            const amount = foodItem.measure_portion || 1;
             const itemToAdd = { 
                 id_food: foodItem.id, 
                 name: foodItem.name, 
-                amount, 
+                measure_portion: foodItem.measure_portion, 
                 measure: foodItem.measure, 
                 carbohydrates_portion: foodItem.carbohydrates_portion,
                 fats_portion: foodItem.fats_portion, 
                 protein_portion: foodItem.protein_portion, 
-                sodium_portion: foodItem.sodium_portion
+                sodium_portion: foodItem.sodium_portion,
+                amount: foodItem.amount_eaten
             };
             setSelection([...currentSelection, itemToAdd]);
         }
@@ -133,7 +134,7 @@ const getStartOfWeek = (date) => {
     const foodAlreadyConsumed = (foodconsumed, itemtocheck) => {
         if(!foodconsumed) return false;
         for (const fooditem of foodconsumed) {
-            const medida = itemtocheck.measure_portion ?? 1;
+            const medida = itemtocheck.amount_eaten ?? 1;
             if (fooditem.id_Food === itemtocheck.id && fooditem.amount_eaten == medida) {
                 return true;
             }
@@ -174,7 +175,8 @@ const getStartOfWeek = (date) => {
 
                 const preparedItem = {
                     ...dbItem,
-                    measure_portion: planItem.amount_eaten, 
+                    amount_eaten: planItem.amount_eaten,
+                    measure_portion: dbItem.measure_portion, 
                     measure: planItem.measure || dbItem.measure,
                     calories_portion: itemCalories,
                     carbohydrates_portion: (dbItem.carbohydrates_portion || 0) * ratio,
@@ -188,7 +190,7 @@ const getStartOfWeek = (date) => {
 
                 return (
                     
-                    <RecommendationItem 
+                    <PlanItem 
                         key={`${mealType}-${index}`} 
                         food={preparedItem} 
                         toggleSelection={toggleSelection}
@@ -257,19 +259,29 @@ const getStartOfWeek = (date) => {
                                 {label}
                             </p>
                             {items.map((obj, index) => {
-                                const foodItem = obj.item ? obj.item : obj;
-                                const amount_eaten = (foodItem.measure_portion||1) * (obj.amount_eaten);
-                                const alreadyConsumed = foodAlreadyConsumed(foodconsumed, foodItem);
-                                const isSelected = checkIsSelected(foodItem.id);
+                                const dbItem = obj.item;
+                                if (!dbItem) return null;
+                                const preparedItem = {
+                                    ...dbItem, 
+                                    amount_eaten: obj.amount_eaten, 
+                                    calories_portion: (dbItem.calories_portion || 0),
+                                    carbohydrates_portion: (dbItem.carbohydrates_portion || 0),
+                                    fats_portion: (dbItem.fats_portion || 0),
+                                    protein_portion: (dbItem.protein_portion || 0) ,
+                                    sodium_portion: (dbItem.sodium_portion || 0),
+                                    measure: dbItem.measure 
+                                };
+                                const alreadyConsumed = foodAlreadyConsumed(foodconsumed, preparedItem);
+                                const isSelected = checkIsSelected(preparedItem.id);
 
                                 return (
-                                    <RecommendationItem 
+                                    <PlanItem 
                                         key={`rec-${key}-${index}`} 
-                                        food={foodItem} 
+                                        food={preparedItem} 
                                         toggleSelection={toggleSelection}
                                         isSelected={isSelected}
                                         alredyconsumed={alreadyConsumed}
-                                        amount_eaten ={amount_eaten}
+                                        amount_eaten ={obj.amount_eaten }
                                     />
                                 );
                             })}
