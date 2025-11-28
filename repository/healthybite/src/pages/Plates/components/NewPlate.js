@@ -102,7 +102,6 @@ const createPlate = async () => {
 
   try {
     const user= await fetchUser()
-    console.log("LEVEL", user.validation)
     let imageUrl = "";
     if (image) {
       imageUrl = await uploadImageToStorage(image);
@@ -165,7 +164,6 @@ const createReviewForPublicPlate = async (plate_id) => {
   try {
       // Assume createReviewAPI is the function that saves the review to Firebase
       await createReview(review);
-      console.log("Review created successfully!");
   } catch (error) {
       console.error("Error creating review:", error);
   }

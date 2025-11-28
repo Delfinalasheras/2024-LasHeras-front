@@ -25,11 +25,9 @@ function Category() {
 
     const fetchCategories = async () => {
         setLoading(true)
-        console.log('user id' , user_id)
         if (user_id) {
             try {
                 const cats = await getCategories(user_id);
-                console.log('categories', cats)
                 setCategories(cats);
             } catch (err) {
                 console.log('Error al obtener las categorias: ' + err);
@@ -46,7 +44,6 @@ function Category() {
             
             if(user_id){
                 setLoading(true)
-                console.log('se ejecuta esto')
                 const [food, barFood, privatePlates, publicPlates, drinks] = await Promise.all([
                     fetchAllFoods(),
                     getProducts(),
@@ -61,7 +58,6 @@ function Category() {
                     ...privatePlates.map((item) => ({ ...item, plate: true, private:true })),
                     ...publicPlates.filter(item=>!(privatePlates.map(e=>e.id)).includes(item.id)).map((item) => ({ ...item, plate: true, private:false }))
                 ];
-                console.log('food data combinada' , combinedFoodData)
                 setFoodData(combinedFoodData)
                 combinedFoodData && setLoading(false)
             }
@@ -71,10 +67,8 @@ function Category() {
     }
 
     useEffect(()=>{
-        console.log(`USer id ${user_id}`)
         if(user_id){
             categories && fetchCategories ();
-            console.log('Food data apenas se carga ', foodData)
             foodData && fetchFoods();
         }
     },[user_id])

@@ -2,7 +2,7 @@ import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {faCirclePlus, faCircleCheck } from '@fortawesome/free-solid-svg-icons';
 
-const RecommendationItem = ({ food, toggleSelection, isSelected, alredyconsumed }) => {
+const PlanItem = ({ food, toggleSelection, isSelected, alredyconsumed }) => {
     
     const handleClick = () => {
         if (alredyconsumed) return;
@@ -52,7 +52,7 @@ const RecommendationItem = ({ food, toggleSelection, isSelected, alredyconsumed 
                 <div className="flex flex-row items-center justify-end">
                     <div className={`flex items-center justify-end px-3 py-1 rounded-md mr-2 ${badgeClasses}`}>
                         <p className="font-semibold text-xs sm:text-md">
-                            {food.measure_portion || 1}
+                            {food.amount_eaten || 1}
                         </p>
                     </div>
                     <div className='flex items-center justify-start w-[60px]'>
@@ -66,4 +66,4 @@ const RecommendationItem = ({ food, toggleSelection, isSelected, alredyconsumed 
     );
 }
 
-export default RecommendationItem;
+export default PlanItem;

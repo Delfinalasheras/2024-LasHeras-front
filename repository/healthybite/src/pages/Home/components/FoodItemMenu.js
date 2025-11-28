@@ -4,7 +4,6 @@ import { faCirclePlus } from '@fortawesome/free-solid-svg-icons';
 
 const FoodItemMenu = ({ food, setSelection }) => {
     const [amount, setAmount] = useState('');
-    console.log("food en fooditem",food)
     const [errorMessage, setErrorMessage] = useState('');
     const handleAmountChange = (e) => {
         const value = Number(e.target.value);

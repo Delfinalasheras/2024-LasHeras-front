@@ -89,17 +89,6 @@ const PopUp = ({newFood, setAddMeal, foodData, handleAddMeal, setNewFood, select
         const recs = {};
         
         try {
-            // const promises = [1, 2, 3, 4].map(i => 
-            //     getRecomendations(i).catch(error => {
-            //         console.log(`Error fetching recommendations for time ${i}`);
-            //         return [];
-            //     })
-            // );
-            
-            // const results = await Promise.all(promises);
-            // results.forEach((result, index) => {
-            //     recs[index + 1] = result;
-            // });
             const recs = await getRecomendations();
             
             recommendationsCache.current = recs;

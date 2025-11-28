@@ -38,9 +38,6 @@ export const registerUser = async (email, password, name, surname, weight, heigh
         // 1. Crear el usuario en Firebase Auth (Paso Crítico 1)
         userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const firebaseUser = userCredential.user;
-        
-        console.log("USER INFO LOG IN", email, password, name, surname, weight, height, birthDate);
-
         // Prepara los datos... (como ya lo tienes)
         const parsedWeight = Math.max(0, parseFloat(weight) || 0);
         const parsedHeight = Math.max(0, parseFloat(height) || 0);
@@ -64,7 +61,6 @@ export const registerUser = async (email, password, name, surname, weight, heigh
             achievements: [],
             email: email,
         };
-        console.log("USER INFO LOG IN", data);
         
         const token = await firebaseUser.getIdToken();
         if (!token) {
@@ -153,7 +149,6 @@ export const fetchUser=async()=>{
             headers: { Authorization: `Bearer ${token}` }
           });
           
-        console.log("RESPONSE DATA",response.data)
         return response.data.user; // Adjust this based on your backend response structure
     } catch (error) {
         console.error('Error fetching user by ID:', error);
@@ -166,7 +161,6 @@ export const editUserData=async(data)=>{
     
     try {
         const token = await getIdToken()
-        console.log("INFORMACION PARA ACTUALIZAR",data)
         if( !token){
             throw new Error ('Token not found')
         }
@@ -220,7 +214,6 @@ export const fetchUserFoods = async (user_id, date) => {
         );
     });
 
-    console.log("Filtered User Foods by date:", filteredFood);
     return filteredFood;
 };
 
@@ -275,6 +268,7 @@ export const fetchAllFoods = async () => {
 
 
 export const addUserFood = async (user_id,selection, date, amount) => {
+    console.log('Adding food:', { user_id, selection, date });
     try {
         const token = await getIdToken()
         if( !token){
@@ -294,14 +288,12 @@ export const addUserFood = async (user_id,selection, date, amount) => {
             }),
             
         });
-        console.log(user_id,selection.id_food,date.toISOString(),Number(selection.amount))
         const data = await response.json();
 
         if (!response.ok) {
             throw new Error(data.detail || "Something went wrong");
         }
 
-        console.log("Food added successfully:", data);
         return response.id;
     } catch (error) {
         console.error("Error adding food:", error);
@@ -313,7 +305,6 @@ export const addUserFood = async (user_id,selection, date, amount) => {
     try {
       const token = await getIdToken();
       if (!token) throw new Error('Token not found');
-    console.log("NEW FOOD DATA", newFood)
       const response = await fetch(`${ruta}/Food_log/`, {
         method: "POST",
         headers: {
@@ -405,11 +396,9 @@ export const getBarCategory = async () => {
     
     try {
         const defaultCategories = await getDefaultCategories();
-        console.log('Default Categories:', defaultCategories); // Log all categories
 
         if (defaultCategories) {
             const barCategory = defaultCategories.find(cat => cat.name === "C&V bar");
-            console.log('Found Bar Category:', barCategory); // Log if the category is found
             return barCategory ? barCategory : null; // Return the category or null if not found
         }
         return null;
@@ -426,9 +415,7 @@ export const createCategory = async (data) => {
       const token = await getIdToken();
       if (!token) throw new Error('Token not found');
      const { id_User, ...payload } = data;
-  
-      console.log("category data to send", payload);
-  
+    
       const response = await axios.post(`${ruta}/CreateCategory`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -444,7 +431,6 @@ export const createCategory = async (data) => {
 export const updateCategory=async(data,category_id)=>{
     try {
         const token = await getIdToken()
-        console.log("ACTUALIZAR CAT",data)
         if( !token){
             throw new Error ('Token not found')
         }
@@ -525,7 +511,6 @@ export const UpdateTotCal = async (totcal_id, data, date) => {
             totFats: data.fat,
         };
 
-        console.log("Payload:", payload); // Log to confirm structure before sending
 
         // Send the request
         await axios.put(`${ruta}/UpdateTotCaloriesUser/${totcal_id}`, payload); 
@@ -537,12 +522,10 @@ export const UpdateTotCal = async (totcal_id, data, date) => {
 
 export const fetchTotCalByDay = async (date) => {
     const isoDate = date.toISOString().split("T")[0];
-    console.log("ISO DATE", isoDate)
 
     const response = await axios.get(`${ruta}/getTotCalDay/${isoDate}`, {
         headers: { Authorization: `Bearer ${await getIdToken()}` }
     });
-    console.log("Filtered User cals by date:", response.message);
 
     return await response.data.message;
 };
@@ -721,7 +704,6 @@ export const createplate = async (selection) => {
         const token = await getIdToken();
         if (!token) throw new Error('Token not found');
   
-        console.log("PLATO", selection)
         const response = await fetch(`${ruta}/CreatePlate/`, {
             method: "POST",
             headers: {
@@ -752,7 +734,6 @@ export const createplate = async (selection) => {
         }
         
 
-        console.log("plate entry added successfully:", data);
         return data.id;
     } catch (error) {
         console.error("Error adding plate entry:", error);
@@ -777,7 +758,6 @@ export const getUserPlates = async () => {
 };
 export const updatePlate=async(data,plate_id)=>{
     try{
-        console.log("PLATO ACTUALIZAR",data)
         const response = await axios.put(`${ruta}/UpdatePlate/${plate_id}`,{...data,id_User: auth.currentUser.uid });
         return response.data
     }catch(error){
@@ -882,7 +862,6 @@ export const createDrink = async (selection) => {
             throw new Error(data.detail || "Something went wrong");
             
         }
-        console.log("drink entry added successfully:", data);
         return response.data.message.drinkType_id;
     } catch (error) {
         console.error("Error adding drink entry:", error);
@@ -891,7 +870,6 @@ export const createDrink = async (selection) => {
 };
 export const deleteDrink=async(drink_id)=>{
     try {
-        console.log(drink_id)
         await axios.delete(`${ruta}/DeleteDrink/${drink_id}`); 
     } catch (error) {
         console.error('Error deleting plateFood by ID:', error);
@@ -901,16 +879,15 @@ export const deleteDrink=async(drink_id)=>{
 export const updateDrink = async (doc_id,data) => {
 
     try {
-        console.log(doc_id,data)
-        await axios.put(`${ruta}/UpdateDrink/${doc_id}`,{...data}); // Adjust this based on your backend response structure
+        await axios.put(`${ruta}/UpdateDrink/${doc_id}`,{...data}); 
     } catch (error) {
         console.error('Error updating drink by ID:', error);
-        return null; // Return null or handle the error as needed
+        return null; 
     }
 };
 export const deleteDrinkType = async (doc_id) => {
     try {
-        await axios.delete(`${ruta}/DeleteDrinkType/${doc_id}`); // Adjust this based on your backend response structure
+        await axios.delete(`${ruta}/DeleteDrinkType/${doc_id}`);
     } catch (error) {
         console.error('Error deleting drinktype by ID:', error);
         return null; // Return null or handle the error as needed
@@ -919,14 +896,12 @@ export const deleteDrinkType = async (doc_id) => {
 export const getDrinkByID = async (drink_id) => {
     const response = await axios.get(`${ruta}/DrinkById/${drink_id}`);
     const drink=response.data.message.drink
-    console.log("drink", drink)
     return drink
 
 }
 export const getPlate_ByID = async (plate_id) => {
     const response = await axios.get(`${ruta}/GetPlateByID/${plate_id}`);
     const drink=response.data.message.plate
-    console.log("PLATOOOOOOOOOO", drink)
     return drink
 
 }
@@ -951,13 +926,7 @@ export const PlateReviews = async () => {
 
 export const updateComments = async (doc_id, data) => {
     try {
-        console.log("Updating comments:", { doc_id, data });
-        const response = await axios.put(`${ruta}/UpdateReview/${doc_id}`, data); // Check if you need {...data}
-        
-        // Log the response from the server
-        console.log("Server response:", response.data);
-
-        // Return success or handle response as needed
+        const response = await axios.put(`${ruta}/AddComment/${doc_id}`, data); 
         return response.data;
     } catch (error) {
         console.error('Error updating review by ID:', error.response ? error.response.data : error.message);
@@ -968,7 +937,6 @@ export const createReview = async (selection) => {
     try {
         const token = await getIdToken();
         if (!token) throw new Error('Token not found');
-        console.log(selection)
         const response = await fetch(`${ruta}/newReview`, {
             method: "POST",
             headers: {
@@ -991,7 +959,6 @@ export const createReview = async (selection) => {
         }
         
 
-        console.log("drink entry added successfully:", data);
         return data.drinkType_id;
     } catch (error) {
         console.error("Error adding drink entry:", error);
@@ -1011,11 +978,8 @@ export const getUserNotification = async () => {
 }
 export const markNotificationAsRead = async (doc_id) => {
     try {
-        console.log("Updating comments:", { doc_id });
         const response = await axios.put(`${ruta}/markNotificationAsRead/${doc_id}`); // Check if you need {...data}
         
-        console.log("Server response:", response);
-
 
         return;
     } catch (error) {
@@ -1055,7 +1019,6 @@ export const getRecomendations = async () => {
         const response=await axios.get(`${ruta}/getRecomendations/`, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
-    console.log("recos",response.data)
     return response.data;
     }catch (error) {
         console.error('Error fetching recomendations :', error);
@@ -1099,7 +1062,6 @@ export const updateWeeklyPlan = async (data) => {
 export const getWeeklyPlan = async (week_start) => {
     try {
         const token = await getIdToken()
-        console.log("entro a getwp, WEEK START", week_start)
         if( !token){
             throw new Error ('Token not found')
         }

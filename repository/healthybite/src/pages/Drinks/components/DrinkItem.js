@@ -57,7 +57,6 @@ const DrinkItem = ({ drink, typeOfDrinks, handleUpdate }) => {
     };
 
     const handleEditDrink = async () => {
-        console.log('Edit function triggered');
     
         if (!name || !measure || !amount || !calories) {
             setMessage("Please fill all the fields");
@@ -76,13 +75,11 @@ const DrinkItem = ({ drink, typeOfDrinks, handleUpdate }) => {
     
         try {
             await updateDrink(drink.id, data);
-            console.log("Data to update:", data);
     
             setMessage('Drink updated successfully');
             setNameError("")
             setEdit(false);
             handleUpdate();
-            console.log('Drink updated successfully');
         } catch (error) {
             setMessage('Error updating drink: ' + error.message);
             console.log('Error updating drink: ', error);

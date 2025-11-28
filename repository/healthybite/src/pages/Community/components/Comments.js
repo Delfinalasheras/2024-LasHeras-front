@@ -51,15 +51,14 @@ const Comments = ({ data, setScores }) => {
         
         setScores(averageScore);
 
-        const updatedInfo = {
-            plate_Id: data.plate_Id,
-            comments: updatedAllComments,
-            score: parseFloat(averageScore)
-        };
+        // const updatedInfo = {
+        //     plate_Id: data.plate_Id,
+        //     comments: updatedAllComments,
+        //     score: parseFloat(averageScore)
+        // };
         
         try {
-            await updateComments(data.id, updatedInfo);
-            console.log("Comments updated successfully.");
+            await updateComments(data.id, newComment);
         } catch (error) {
             console.error("Failed to update comments:", error);
         }

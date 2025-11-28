@@ -35,13 +35,11 @@ const Calories = ({ userFood }) => {
     const createOrUpdateTotCalories = async (totals, selectedDate) => {
         try {
             const totCalByDay = await fetchTotCalByDay(selectedDate);
-            console.log("totcalbyday", totCalByDay);
     
             const dataToSend = {
                 ...totals,
             };
     
-            console.log("Data to send:", dataToSend); 
     
             if (totCalByDay.length === 0) {
                 const createdTotCal = await createTotCal(dataToSend, selectedDate);

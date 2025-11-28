@@ -92,7 +92,6 @@ function Planner() {
     const [allPlatesMap, setAllPlatesMap] = useState({});
     const [showShoppingList, setShowShoppingList] = useState(false);
     const [shoppingListCache, setShoppingListCache] = useState(null);
-    // Efecto al cambiar de semana
     useEffect(() => { fetchPlan(); }, [weekStart]);
 
     useEffect(() => {
@@ -109,7 +108,6 @@ function Planner() {
                     allPlatesMap[item.id] = item; 
                 });
                 setAllPlatesMap(allPlatesMap);
-                console.log("allFoods", allFoods);
                 const sortedFood = food.sort((a, b) => a.name.toUpperCase() < b.name.toUpperCase() ? -1 : 1);
                 setFoodData(sortedFood);
                 setPlatesData({ mines: privatePlates, others: otherPlates });
@@ -127,13 +125,11 @@ function Planner() {
                 const plateDetails = allPlatesMap[item.plate_id];
     
                 if (plateDetails) {
-                    // B. Obtener los valores necesarios
                     
                     const caloriesPerPortion = plateDetails.calories_portion || 0;
                     const portionAmount = plateDetails.measure_portion || 1; // Asumimos 1 si no está definido
                     const amountEaten = item.amount_eaten || 0; 
                     
-                    // C. Aplicar la fórmula: (cant consumida * calorías x porción) / porción
                     if (portionAmount > 0) {
                         const calories = (amountEaten * caloriesPerPortion) / portionAmount;
                         totalCalories += calories;
@@ -178,7 +174,6 @@ function Planner() {
 
 
     const handleSaveChanges = async () => {
-        console.log("GUARDANDO PAYLOAD CON FECHAS:", JSON.stringify(plan, null, 2));
         setLoading(true);
         
         try {
@@ -187,7 +182,6 @@ function Planner() {
             if (response) {
                 setHasUnsavedChanges(false);
                 setShoppingListCache(null);
-                console.log("Guardado exitoso!");
             } else {
                  throw new Error("API did not return a successful response.");
             }
@@ -220,7 +214,6 @@ function Planner() {
             name: item.name,
             amount_eaten: item.amount 
         }));
-        console.log("Adding to plan:", newItems);
 
         
         updatedPlan.days[currentDay] = {
@@ -341,7 +334,6 @@ function Planner() {
                             <div className="grid grid-cols-7 gap-3 flex-1">
                                 {DAYS.map((day, index) => {
                                     const isSelected = selectedDayIndex === index;
-                                    // Obtenemos la fecha específica de este día para mostrarla
                                     const dayDate = plan?.days?.[day]?.date 
                                         ? new Date(plan.days[day].date + 'T00:00:00') 
                                         : new Date();
@@ -353,7 +345,6 @@ function Planner() {
                                             className={`relative p-3 rounded-xl transition-all duration-200 flex flex-col items-center justify-center gap-1 ${isSelected ? 'bg-healthyGreen text-white shadow-lg scale-105 z-10' : 'bg-white text-healthyDarkGray1 hover:bg-orange-50 shadow-sm'}`}
                                         >
                                             <span className="capitalize font-quicksand font-bold text-lg">{day.substring(0, 3)}</span>
-                                            {/* Mostramos el número del día (ej: 18) */}
                                             <span className={`text-xs font-quicksand ${isSelected ? 'text-white/80' : 'text-gray-400'}`}>
                                                 {dayDate.getDate()}
                                             </span>
@@ -380,7 +371,6 @@ function Planner() {
                                         <div>
                                             <h2 className="text-3xl font-bold font-quicksand text-healthyDarkGray1 capitalize flex items-center gap-3">
                                                 {DAYS[selectedDayIndex]}
-                                                {/* Mostramos la fecha completa en el título */}
                                                 <span className="text-lg font-normal text-gray-400">
                                                     {plan?.days?.[DAYS[selectedDayIndex]]?.date}
                                                 </span>
@@ -391,13 +381,11 @@ function Planner() {
                                         </div>
                                     </div>
                                 </div>
-                                {/* ... Resto del componente igual ... */}
                                 <div className="p-6 grid grid-cols-4 gap-6">
                                     {MEALS.map((meal) => {
                                         const mealList = plan?.days?.[DAYS[selectedDayIndex]]?.[meal] || [];
                                         return (
                                             <div key={meal} className="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-lg transition-all duration-300 flex flex-col h-full group relative overflow-hidden">
-                                                {/* ... Mismo contenido de comidas ... */}
                                                  <div className="absolute top-0 right-0 w-20 h-20 bg-healthyOrange/5 rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-150"></div>
                                                 
                                                 <div className="flex items-center justify-between mb-4 relative z-10">
@@ -418,14 +406,27 @@ function Planner() {
                                                     {mealList.length > 0 ? (
                                                         <>
                                                             <div className="space-y-2 w-full">
-                                                                {mealList.map((item, idx) => (
-                                                                    <div key={idx} className="flex justify-between items-center bg-gray-50 p-2 rounded-lg border border-gray-100">
-                                                                        <span className="text-sm font-quicksand font-bold text-healthyDarkGray1 line-clamp-1">{item.name}</span>
-                                                                        <button onClick={() => handleRemoveMeal(DAYS[selectedDayIndex], meal, idx)} className="text-gray-400 hover:text-red-500 ml-2 p-1">
-                                                                            <FontAwesomeIcon icon={faTrash} className="text-xs" />
-                                                                        </button>
-                                                                    </div>
-                                                                ))}
+                                                            {mealList.map((item, idx) => {
+                                                                    const plateDetails = allPlatesMap[item.plate_id];
+                                                                    const measureLabel = plateDetails?.measure || "plate";
+
+                                                                    return (
+                                                                        <div key={idx} className="flex justify-between items-center bg-gray-50 p-2 rounded-lg border border-gray-100">
+                                                                            <div className="flex flex-col overflow-hidden">
+                                                                                <span className="text-sm font-quicksand font-bold text-healthyDarkGray1 line-clamp-1">
+                                                                                    {item.name}
+                                                                                </span>
+                                                                                <span className="text-xs text-gray-500 font-quicksand">
+                                                                                    {item.amount_eaten} {measureLabel}
+                                                                                </span>
+                                                                            </div>
+                                                                            
+                                                                            <button onClick={() => handleRemoveMeal(DAYS[selectedDayIndex], meal, idx)} className="text-gray-400 hover:text-red-500 ml-2 p-1">
+                                                                                <FontAwesomeIcon icon={faTrash} className="text-xs" />
+                                                                            </button>
+                                                                        </div>
+                                                                    );
+                                                                })}
                                                             </div>
                                                             <button onClick={() => openCopyModal(DAYS[selectedDayIndex], meal)} className="mt-3 text-xs font-bold text-healthyOrange hover:text-healthyDarkOrange flex items-center justify-center gap-1 py-2 border-t border-gray-100 w-full hover:bg-orange-50 rounded-b-lg transition">
                                                                 <FontAwesomeIcon icon={faCopy} /> Repeat this meal
@@ -447,7 +448,6 @@ function Planner() {
                                     <div key={day} className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-full">
                                         <div className="bg-gray-50 p-2 border-b border-gray-100 text-center">
                                             <h2 className="font-bold font-quicksand text-healthyDarkGray1 capitalize text-sm">{day}</h2>
-                                            {/* Fecha pequeña en vista semanal */}
                                             <span className="text-[10px] text-gray-400 block">
                                                 {plan?.days?.[day]?.date}
                                             </span>
@@ -478,7 +478,7 @@ function Planner() {
                         )}
                     </div>
                     
-                    {/* --- VISTA MÓVIL (CORREGIDA) --- */}
+                    {/* --- VISTA MÓVIL --- */}
                     <div className="md:hidden">
                         <div className="bg-white rounded-2xl shadow-sm p-2 mb-4 sticky top-16 z-20">
                             <div className="flex overflow-x-auto gap-2 scrollbar-hide pb-1">
@@ -512,7 +512,6 @@ function Planner() {
                                                 <div key={meal} className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
                                                     <div className="flex justify-between items-center mb-3">
                                                         <div className="flex items-center gap-2">
-                                                            {/* Usa el icono/emoji de MEAL_CONFIG */}
                                                             <span className="text-2xl">{MEAL_CONFIG[meal].icon}</span>
                                                             <span className="font-quicksand font-bold text-healthyDarkGray1">
                                                                 {MEAL_CONFIG[meal].label}
@@ -529,19 +528,31 @@ function Planner() {
                                                     </div>
                                                     {mealList.length > 0 ? (
                                                         <div className="space-y-2">
-                                                            {/* Iteramos sobre el array de comidas (mealList) */}
-                                                            {mealList.map((item, idx) => (
-                                                                <div key={idx} className="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-gray-100">
-                                                                    <p className="font-quicksand font-medium text-healthyDarkGray1 line-clamp-1">{item.name}</p>
-                                                                    {/* Usamos handleRemoveMeal para eliminar el ítem específico */}
-                                                                    <button 
-                                                                        onClick={() => handleRemoveMeal(day, meal, idx)} 
-                                                                        className="text-red-400 hover:text-red-600 p-1 ml-2"
-                                                                    >
-                                                                        <FontAwesomeIcon icon={faTrash} />
-                                                                    </button>
-                                                                </div>
-                                                            ))}
+                                                            {mealList.map((item, idx) => {
+                                                                const plateDetails = allPlatesMap[item.plate_id];
+                                                                const measureLabel = plateDetails?.measure || "plate";
+
+                                                                return (
+                                                                    <div key={idx} className="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-gray-100">
+                                                                        <div className="flex flex-col overflow-hidden">
+                                                                            <p className="font-quicksand font-medium text-healthyDarkGray1 line-clamp-1">
+                                                                                {item.name}
+                                                                            </p>
+                                                                            {/* AQUI MOSTRAMOS LA CANTIDAD Y LA MEDIDA */}
+                                                                            <p className="text-xs text-gray-400 font-quicksand mt-0.5">
+                                                                                {item.amount_eaten} {measureLabel}
+                                                                            </p>
+                                                                        </div>
+
+                                                                        <button 
+                                                                            onClick={() => handleRemoveMeal(day, meal, idx)} 
+                                                                            className="text-red-400 hover:text-red-600 p-1 ml-2"
+                                                                        >
+                                                                            <FontAwesomeIcon icon={faTrash} />
+                                                                        </button>
+                                                                    </div>
+                                                                );
+                                                            })}
                                                         </div>
                                                     ) : (
                                                         <p 

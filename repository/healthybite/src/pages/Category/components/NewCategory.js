@@ -41,7 +41,6 @@ function NewCategory({handleUpdate, setAddCategory, setAddFood, foods, platesDat
     };
 
     const handleCategory= async ()=>{
-        console.log("Se quiere agregar categoriaaa")
         if (!name){
             setMessage("The category's name is missing")
             return
@@ -70,7 +69,6 @@ function NewCategory({handleUpdate, setAddCategory, setAddFood, foods, platesDat
                 setMessage('')
                 setAddCategory(false)
                 handleUpdate()
-                console.log('Categoria agregada con éxito')
             }catch(error){
                 console.log("Error adding new category : ", error)
             }finally{
