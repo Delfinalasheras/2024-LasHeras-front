@@ -103,7 +103,7 @@ export const loginUser = async (email, password) => {
 export const forgotPassword = async (email) => {
     try {
         return await sendPasswordResetEmail(auth, email, {
-            url: "https://2024-ranchoaparte-front-ivory.vercel.app/resetPassword",
+            url: "https://2024-las-heras-front.vercel.app/resetPassword",
             handleCodeInApp: true,
           });
     } catch (error) {
