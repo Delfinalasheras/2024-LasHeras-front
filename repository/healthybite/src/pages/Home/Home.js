@@ -17,6 +17,7 @@ import { CircularProgressbar } from 'react-circular-progressbar';
 import { PieChart } from "@mui/x-charts";
 import Goals from "../../components/Goals";
 import { UserContext } from "../../App";
+import { set } from "date-fns";
 
 function Home() {
     const {user_id} = useContext(UserContext);
@@ -26,7 +27,6 @@ function Home() {
     const [userFood, setUserFood] = useState([]); 
     const [date, setDate] = useState(new Date());
     const [amount, setAmount] = useState();
-    // const [selection, setSelection] = useState();
     const [selection, setSelection] = useState([]);
     const [addMeal, setAddMeal] = useState(false);
     const [newFood, setNewFood] = useState();
@@ -41,10 +41,7 @@ function Home() {
     const [streak, setStreak] = useState(0);
     const [askForGoals, setAskForGoals]=useState(false)
 
-    const [showDailyMenu, setShowDailyMenu] = useState(false); // State to control popup visibility
-
-    // Fetch daily menu
-// Refetch when user_id or date changes
+    const [showDailyMenu, setShowDailyMenu] = useState(false); 
 
 
     useEffect(()=>{
@@ -235,7 +232,6 @@ function Home() {
     };
 
 const handleAddMeal = async (itemsToAdd) => {
-    // Si no vienen items por argumento, usamos el estado local por seguridad
     const itemsToProcess = itemsToAdd || selection;
 
     if (!itemsToProcess || itemsToProcess.length === 0) return;
@@ -250,17 +246,14 @@ const handleAddMeal = async (itemsToAdd) => {
         const dateTimeForIngestion = selectedDate;
         
 
-        // --- BUCLE: Procesamos cada item seleccionado ---
         for (const item of itemsToProcess) {
             const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-            // Buscamos los detalles usando el ID del item actual del bucle
             let foodDetails = foodData?.find(f => f.id === item.id_food) || 
                              platesData?.mines?.find(p => p.id === item.id_food) ||
                              platesData?.others?.find(p => p.id === item.id_food) ||
                              drinksData?.find(d => d.id === item.id_food);
 
-            // Construimos el objeto
             const newMeal = {
                 id: tempId,
                 id_Food: item.id_food,
@@ -282,26 +275,20 @@ const handleAddMeal = async (itemsToAdd) => {
 
             newLocalMeals.push(newMeal);
 
-            // Preparamos la llamada a Firestore (pero no esperamos con await aquí para hacerlo paralelo)
             const uploadPromise = addUserFood(user_id, item, dateTimeForIngestion, item.amount)
-                .then(realId => ({ tempId, realId })); // Retornamos mapeo de IDs
+                .then(realId => ({ tempId, realId })); 
             
             promises.push(uploadPromise);
         }
-
-        // 1. UI Optimista: Agregamos TODO el bloque visualmente de inmediato
         setUserFood(prev => [...prev, ...newLocalMeals]);
         setFilteredFood(prev => [...prev, ...newLocalMeals]);
 
-        // Limpiamos formularios
         setAmount(null);
-        setSelection([]); // Volvemos a array vacío
+        setSelection([]);
         setAddMeal(false);
-
-        // 2. Sincronización Real: Esperamos a que TODOS se guarden en Firestore
+        setShowDailyMenu(false);
         const results = await Promise.all(promises);
 
-        // 3. Actualizamos IDs: Reemplazamos los tempIds por los reales
         setUserFood(prev => prev.map(food => {
             const result = results.find(r => r.tempId === food.id);
             return result ? { ...food, id: result.realId } : food;
@@ -316,7 +303,6 @@ const handleAddMeal = async (itemsToAdd) => {
     } catch (error) {
         console.error('Error adding batch meals:', error);
 
-        // Rollback: Si falla, quitamos los que tengan temp_
         setUserFood(prev => prev.filter(food => !food.id.toString().startsWith('temp_')));
         setFilteredFood(prev => prev.filter(food => !food.id.toString().startsWith('temp_')));
 

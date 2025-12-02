@@ -49,6 +49,8 @@ function NavBar() {
                             <NavItem route='/' name='Home' icon={faHouse} setOpenBar={setOpenBar} />
                             <NavItem route='/plates' name='Plates' icon={faUtensils} setOpenBar={setOpenBar}/>
                             <NavItem route='/drinks' name='Drinks' icon={faMugHot}  setOpenBar={setOpenBar}/>
+                            <NavItem route='/Planner' name='Planner' icon={faStar}  />
+
                             <NavItem route='/dashboard' name='Dashboard' icon={faChartLine} setOpenBar={setOpenBar} />
                             <NavItem route='/category' name='Category' icon={faLayerGroup} setOpenBar={setOpenBar} />
                             <NavItem route='/community' name='Community' icon={faComment}  setOpenBar={setOpenBar} />
